@@ -27,6 +27,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
@@ -67,6 +68,7 @@ dependencies {
     implementation("androidx.wear.compose:compose-navigation:1.1.2")
     implementation("com.google.android.horologist:horologist-composables:0.5.10")
     implementation("com.google.android.gms:play-services-pal:20.2.0")
+    implementation(libs.androidx.wear.tooling.preview)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)

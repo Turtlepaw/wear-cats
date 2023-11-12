@@ -6,7 +6,20 @@
         <State />
       </entry>
       <entry key="wear">
-        <State />
+        <State>
+          <runningDeviceTargetSelectedWithDropDown>
+            <Target>
+              <type value="RUNNING_DEVICE_TARGET" />
+              <deviceKey>
+                <Key>
+                  <type value="SERIAL_NUMBER" />
+                  <value value="adb-29231JEEJW09AK-ogesKd._adb-tls-connect._tcp" />
+                </Key>
+              </deviceKey>
+            </Target>
+          </runningDeviceTargetSelectedWithDropDown>
+          <timeTargetWasSelectedWithDropDown value="2023-11-12T20:58:52.551314600Z" />
+        </State>
       </entry>
     </value>
   </component>

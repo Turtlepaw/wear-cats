@@ -56,6 +56,7 @@ import androidx.wear.compose.material.scrollAway
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.turtlepaw.sleeptools.R
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
@@ -142,31 +143,31 @@ fun WearPages(sharedPreferences: SharedPreferences){
                             color = Color.Black
                         )
                     }
-                    Row(
-                        horizontalArrangement = Arrangement.Center, // Center children horizontally
-                        verticalAlignment = Alignment.CenterVertically, // Center children vertically
-                        modifier = Modifier.fillMaxSize() // Fill the entire available space
-                    ) {
-                        Text(
-                            text = "Use Alarm",
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f) // Takes up available space
-                        )
-                        Switch(
-                            checked = useAlarm,
-                            onCheckedChange = { newCheckedState ->
-
-                            },
-                            modifier = Modifier
-                                .wrapContentSize(),
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = colors.primaryVariant, // Match the button color
-                                checkedTrackColor = colors.primary, // Match the button color
-                                uncheckedThumbColor = colors.onPrimary, // Match the text color
-                                uncheckedTrackColor = colors.onPrimary, // Match the text color
-                            )
-                        )
-                    }
+//                    Row(
+//                        horizontalArrangement = Arrangement.Center, // Center children horizontally
+//                        verticalAlignment = Alignment.CenterVertically, // Center children vertically
+//                        modifier = Modifier.fillMaxSize() // Fill the entire available space
+//                    ) {
+//                        Text(
+//                            text = "Use Alarm",
+//                            fontWeight = FontWeight.Medium,
+//                            modifier = Modifier.weight(1f) // Takes up available space
+//                        )
+//                        Switch(
+//                            checked = useAlarm,
+//                            onCheckedChange = { newCheckedState ->
+//
+//                            },
+//                            modifier = Modifier
+//                                .wrapContentSize(),
+//                            colors = SwitchDefaults.colors(
+//                                checkedThumbColor = colors.primaryVariant, // Match the button color
+//                                checkedTrackColor = colors.primary, // Match the button color
+//                                uncheckedThumbColor = colors.onPrimary, // Match the text color
+//                                uncheckedTrackColor = colors.onPrimary, // Match the text color
+//                            )
+//                        )
+//                    }
                 }
             }
             composable("date-picker"){
@@ -325,12 +326,12 @@ fun stringToBoolean(input: String): Boolean {
     return when (lowerCaseInput) {
         "true", "1", "yes", "on" -> true
         "false", "0", "no", "off" -> false
-        else -> throw IllegalArgumentException("Invalid boolean string: $input")
+        else -> false
     }
 }
 
 
-@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
+@Preview(device = WearDevices.LARGE_ROUND, showSystemUi = true)
 @Composable
 fun DefaultPreview() {
     WearApp(
