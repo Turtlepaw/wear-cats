@@ -9,6 +9,7 @@ package com.turtlepaw.sleeptools.presentation
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -23,13 +24,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,12 +52,14 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.MaterialTheme.colors
 import androidx.wear.compose.material.Switch
 import androidx.wear.compose.material.SwitchDefaults
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
+import androidx.wear.compose.material.ToggleChip
 import androidx.wear.compose.material.scrollAway
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
@@ -67,6 +75,11 @@ import java.time.format.DateTimeParseException
 import java.util.Locale
 import java.time.LocalTime
 import java.time.Duration
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.wear.compose.material.Colors
+import androidx.wear.compose.material.ToggleChipDefaults
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,12 +102,8 @@ fun WearPages(sharedPreferences: SharedPreferences){
         val formatter = DateTimeFormatter.ofPattern("hh:mm a")
         val navController = rememberSwipeDismissableNavController()
         val wakeTimeString = sharedPreferences.getString("wake_time", "10:00") // Default to midnight
-        val useAlarmString = sharedPreferences.getString("wake_time", "on") // Default to on
-        val useAlarm = if (useAlarmString == null) {
-            true
-        } else {
-            stringToBoolean(useAlarmString)
-        }
+        val useAlarmBool = sharedPreferences.getBoolean("use_alarm", true) // Default to on
+        var useAlarm by remember { mutableStateOf(useAlarmBool) }
         var wakeTime = try {
             LocalTime.parse(wakeTimeString)
         } catch (e: DateTimeParseException) {
@@ -143,41 +152,66 @@ fun WearPages(sharedPreferences: SharedPreferences){
                             color = Color.Black
                         )
                     }
-//                    Row(
-//                        horizontalArrangement = Arrangement.Center, // Center children horizontally
-//                        verticalAlignment = Alignment.CenterVertically, // Center children vertically
-//                        modifier = Modifier.fillMaxSize() // Fill the entire available space
-//                    ) {
-//                        Text(
-//                            text = "Use Alarm",
-//                            fontWeight = FontWeight.Medium,
-//                            modifier = Modifier.weight(1f) // Takes up available space
-//                        )
-//                        Switch(
-//                            checked = useAlarm,
-//                            onCheckedChange = { newCheckedState ->
-//
-//                            },
-//                            modifier = Modifier
-//                                .wrapContentSize(),
-//                            colors = SwitchDefaults.colors(
-//                                checkedThumbColor = colors.primaryVariant, // Match the button color
-//                                checkedTrackColor = colors.primary, // Match the button color
-//                                uncheckedThumbColor = colors.onPrimary, // Match the text color
-//                                uncheckedTrackColor = colors.onPrimary, // Match the text color
-//                            )
-//                        )
-//                    }
+                    ToggleChip(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        checked = useAlarm,
+                        onCheckedChange = {isEnabled ->
+                            useAlarm = isEnabled
+                            val editor = sharedPreferences.edit()
+                            editor.putBoolean("use_alarm", isEnabled)
+                            editor.apply()
+                        },
+                        label = {
+                            Text("Use Alarm", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        },
+                        appIcon = {
+                            Icon(
+                                painter = painterResource(id = if (useAlarm) R.drawable.alarm_on else R.drawable.alarm_off),
+                                contentDescription = "alarm",
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .wrapContentSize(align = Alignment.Center),
+                            )
+                        },
+                        toggleControl = {
+                            Switch(
+                                checked = useAlarm,
+                                enabled = true,
+                                modifier = Modifier.semantics {
+                                    this.contentDescription =
+                                        if (useAlarm) "On" else "Off"
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color(0xFFE4C6FF)
+                                )
+                            )
+                        },
+                        enabled = true,
+                        colors = ToggleChipDefaults.toggleChipColors(
+                            checkedEndBackgroundColor = Color(0x80E4C6FF)
+                        )
+                    )
                 }
             }
             composable("date-picker"){
-                TimePickerWith12HourClock(onTimeConfirm = { time ->
-                    wakeTime = time
-                    val editor = sharedPreferences.edit()
-                    editor.putString("wake_time", time.toString())
-                    editor.apply()
-                    navController.navigate("settings")
-                })
+                MaterialTheme(
+                    colors = Colors(
+                        primary = Color(0xFFE4C6FF),
+                        secondary = Color(0xFFE4C6FF)
+                    )
+                ) {
+                    TimePickerWith12HourClock(
+                        onTimeConfirm = { time ->
+                            wakeTime = time
+                            val editor = sharedPreferences.edit()
+                            editor.putString("wake_time", time.toString())
+                            editor.apply()
+                            navController.navigate("settings")
+                        }
+                    )
+                }
             }
         }
     }

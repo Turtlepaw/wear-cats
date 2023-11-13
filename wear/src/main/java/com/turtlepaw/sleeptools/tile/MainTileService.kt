@@ -1,11 +1,12 @@
 package com.turtlepaw.sleeptools.tile
 
-import android.content.ComponentName
+import android.app.TaskStackBuilder
 import android.content.Context
+import android.content.Intent
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.argb
 import androidx.wear.protolayout.DimensionBuilders.dp
@@ -26,6 +27,16 @@ import com.google.android.horologist.compose.tools.LayoutRootPreview
 import com.google.android.horologist.compose.tools.buildDeviceParameters
 import com.google.android.horologist.tiles.SuspendingTileService
 import com.turtlepaw.sleeptools.R
+import com.turtlepaw.sleeptools.presentation.MainActivity
+import java.time.Duration
+import java.time.LocalTime
+import android.content.SharedPreferences
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
+import java.time.format.DateTimeParseException
+
 
 private const val RESOURCES_VERSION = "1"
 
@@ -34,6 +45,11 @@ private const val RESOURCES_VERSION = "1"
  */
 @OptIn(ExperimentalHorologistApi::class)
 class MainTileService : SuspendingTileService() {
+    //not working as we don't have a AppDataKey and i dont know how to make one
+//    companion object {
+//        val KEY_WATER_INTAKE = AppDataKey<DynamicInt32>("water_intake")
+//        val KEY_NOTE = AppDataKey<DynamicString>("note")
+//    }
     override suspend fun resourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest
     ): ResourceBuilders.Resources {
@@ -53,9 +69,28 @@ class MainTileService : SuspendingTileService() {
     override suspend fun tileRequest(
         requestParams: RequestBuilders.TileRequest
     ): TileBuilders.Tile {
+        val sharedPreferences = getSharedPreferences("SleepTurtlepawSettings", Context.MODE_PRIVATE)
+        val wakeTimeString = sharedPreferences.getString("wake_time", "10:00")
+        val wakeTime = try {
+            LocalTime.parse(wakeTimeString)
+        } catch (e: DateTimeParseException) {
+            // Handle parsing error, use a default value, or show an error message
+            LocalTime.NOON
+        }
+        val sleepTime = calculateTimeDifference(wakeTime)
+        val lastClickableId = requestParams.currentState.lastClickableId
+        if (lastClickableId == "open-app-main") {
+            Log.d("Open App", "Opening main activity...")
+            TaskStackBuilder.create(this)
+                .addNextIntentWithParentStack(
+                    Intent(this, MainActivity::class.java)
+                )
+                .startActivities()
+        }
+
         val singleTileTimeline = TimelineBuilders.Timeline.Builder().addTimelineEntry(
             TimelineBuilders.TimelineEntry.Builder().setLayout(
-                LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(this)).build()
+                LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(this, sleepTime)).build()
             ).build()
         ).build()
 
@@ -64,24 +99,22 @@ class MainTileService : SuspendingTileService() {
     }
 }
 
-private fun tileLayout(context: Context): LayoutElementBuilders.LayoutElement {
+private fun tileLayout(context: Context, sleepTime: TimeDifference): LayoutElementBuilders.LayoutElement {
     return PrimaryLayout.Builder(buildDeviceParameters(context.resources))
         .setContent(
-            myLayout(context)
+            myLayout(context, sleepTime)
         ).build()
 }
 
-private fun myLayout(context: Context): LayoutElement =
+private fun myLayout(context: Context, sleepTime: TimeDifference): LayoutElement =
     LayoutElementBuilders.Column.Builder()
         .setModifiers(
             ModifiersBuilders.Modifiers.Builder()
             .setClickable(
                 ModifiersBuilders.Clickable.Builder()
                 .setId("open-app-main")
-                .setOnClick(
-                    ActionBuilders.launchAction(
-                    ComponentName("com.turtlepaw.sleeptools", ".presentation.MainActivity")
-                )).build()
+                .setOnClick(ActionBuilders.LoadAction.Builder().build())
+                .build()
             ).build()
         )
         .addContent(
@@ -91,7 +124,7 @@ private fun myLayout(context: Context): LayoutElement =
                 .build()
         )
         .addContent(
-            Text.Builder(context, "8hr 35min")
+            Text.Builder(context, "${sleepTime.hours}hrs ${sleepTime.minutes}min")
                 .setColor(argb(0xFFE4C6FF.toInt()))
                 .setTypography(Typography.TYPOGRAPHY_DISPLAY3)
                 .build()
@@ -127,6 +160,25 @@ private fun myLayout(context: Context): LayoutElement =
 //        )
         .build()
 
+data class TimeDifference(val hours: Long, val minutes: Long)
+fun calculateTimeDifference(targetTime: LocalTime, now: LocalTime = LocalTime.now()): TimeDifference {
+    val currentDateTime = LocalTime.now()
+    val duration = if (targetTime.isBefore(now)) {
+        // If the target time is before the current time, it's on the next day
+        Duration.between(currentDateTime, targetTime).plusDays(1)
+    } else {
+        Duration.between(currentDateTime, targetTime)
+    }
+
+    val hours = duration.toHours()
+    val minutes = duration.minusHours(hours).toMinutes()
+    return TimeDifference(hours, minutes)
+}
+
+fun getBedtime(){
+
+}
+
 @Preview(
     device = WearDevices.LARGE_ROUND,
     showSystemUi = true,
@@ -135,5 +187,5 @@ private fun myLayout(context: Context): LayoutElement =
 )
 @Composable
 fun TilePreview() {
-    LayoutRootPreview(root = tileLayout(LocalContext.current))
+    LayoutRootPreview(root = tileLayout(LocalContext.current, calculateTimeDifference(LocalTime.NOON)))
 }
