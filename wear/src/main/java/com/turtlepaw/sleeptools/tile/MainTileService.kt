@@ -35,6 +35,11 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
+import androidx.wear.protolayout.StateBuilders
+import androidx.wear.protolayout.expression.DynamicBuilders
+import androidx.wear.protolayout.expression.DynamicBuilders.DynamicDuration
+import androidx.wear.protolayout.expression.DynamicBuilders.DynamicString
+import androidx.wear.protolayout.expression.StateEntryBuilders
 import java.time.format.DateTimeParseException
 
 
@@ -45,11 +50,10 @@ private const val RESOURCES_VERSION = "1"
  */
 @OptIn(ExperimentalHorologistApi::class)
 class MainTileService : SuspendingTileService() {
-    //not working as we don't have a AppDataKey and i dont know how to make one
-//    companion object {
-//        val KEY_WATER_INTAKE = AppDataKey<DynamicInt32>("water_intake")
-//        val KEY_NOTE = AppDataKey<DynamicString>("note")
-//    }
+    companion object {
+        const val KEY_WAKE_TIME = "wake_time"
+    }
+
     override suspend fun resourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest
     ): ResourceBuilders.Resources {
@@ -69,15 +73,6 @@ class MainTileService : SuspendingTileService() {
     override suspend fun tileRequest(
         requestParams: RequestBuilders.TileRequest
     ): TileBuilders.Tile {
-        val sharedPreferences = getSharedPreferences("SleepTurtlepawSettings", Context.MODE_PRIVATE)
-        val wakeTimeString = sharedPreferences.getString("wake_time", "10:00")
-        val wakeTime = try {
-            LocalTime.parse(wakeTimeString)
-        } catch (e: DateTimeParseException) {
-            // Handle parsing error, use a default value, or show an error message
-            LocalTime.NOON
-        }
-        val sleepTime = calculateTimeDifference(wakeTime)
         val lastClickableId = requestParams.currentState.lastClickableId
         if (lastClickableId == "open-app-main") {
             Log.d("Open App", "Opening main activity...")
@@ -88,14 +83,27 @@ class MainTileService : SuspendingTileService() {
                 .startActivities()
         }
 
+        val sharedPreferences = getSharedPreferences("SleepTurtlepawSettings", Context.MODE_PRIVATE)
+        val wakeTimeStr = sharedPreferences.getString("wake_time", "10:00")
+        val wakeTime = try {
+            LocalTime.parse(wakeTimeStr)
+        } catch (e: DateTimeParseException) {
+            // Handle parsing error, use a default value, or show an error message
+            LocalTime.NOON
+        }
+        val sleepTime = calculateTimeDifference(wakeTime)
+
         val singleTileTimeline = TimelineBuilders.Timeline.Builder().addTimelineEntry(
             TimelineBuilders.TimelineEntry.Builder().setLayout(
                 LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(this, sleepTime)).build()
             ).build()
         ).build()
 
-        return TileBuilders.Tile.Builder().setResourcesVersion(RESOURCES_VERSION)
-            .setTileTimeline(singleTileTimeline).build()
+        return TileBuilders.Tile.Builder()
+            .setResourcesVersion(RESOURCES_VERSION)
+            .setTileTimeline(singleTileTimeline)
+            .setFreshnessIntervalMillis(60 * 2)
+            .build()
     }
 }
 
@@ -124,7 +132,7 @@ private fun myLayout(context: Context, sleepTime: TimeDifference): LayoutElement
                 .build()
         )
         .addContent(
-            Text.Builder(context, "${sleepTime.hours}hrs ${sleepTime.minutes}min")
+            Text.Builder(context, "${sleepTime.hours}h ${sleepTime.minutes}m")
                 .setColor(argb(0xFFE4C6FF.toInt()))
                 .setTypography(Typography.TYPOGRAPHY_DISPLAY3)
                 .build()
@@ -140,8 +148,8 @@ private fun myLayout(context: Context, sleepTime: TimeDifference): LayoutElement
                         )
                         .build()
                 )
-                .setWidth(dp(35f))
-                .setHeight(dp(35f))
+                .setWidth(dp(45f))
+                .setHeight(dp(45f))
                 .setResourceId("sleep_icon")
                 .build()
         )
@@ -159,6 +167,10 @@ private fun myLayout(context: Context, sleepTime: TimeDifference): LayoutElement
 //                .build()
 //        )
         .build()
+
+fun PreferencesHandler(sharedPreferences: SharedPreferences, key: String, default: String = "unknown"): String {
+    return sharedPreferences.getString(key, default) ?: default
+}
 
 data class TimeDifference(val hours: Long, val minutes: Long)
 fun calculateTimeDifference(targetTime: LocalTime, now: LocalTime = LocalTime.now()): TimeDifference {
