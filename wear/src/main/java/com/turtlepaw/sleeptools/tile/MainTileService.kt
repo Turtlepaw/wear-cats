@@ -40,6 +40,9 @@ import androidx.wear.protolayout.expression.DynamicBuilders
 import androidx.wear.protolayout.expression.DynamicBuilders.DynamicDuration
 import androidx.wear.protolayout.expression.DynamicBuilders.DynamicString
 import androidx.wear.protolayout.expression.StateEntryBuilders
+import androidx.wear.tiles.TileService
+import com.turtlepaw.sleeptools.presentation.TimeDifference
+import com.turtlepaw.sleeptools.presentation.calculateTimeDifference
 import java.time.format.DateTimeParseException
 
 
@@ -93,16 +96,20 @@ class MainTileService : SuspendingTileService() {
         }
         val sleepTime = calculateTimeDifference(wakeTime)
 
+//        getUpdater(this)
+//            .requestUpdate(MainTileService::class.java);
+
         val singleTileTimeline = TimelineBuilders.Timeline.Builder().addTimelineEntry(
             TimelineBuilders.TimelineEntry.Builder().setLayout(
                 LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(this, sleepTime)).build()
             ).build()
         ).build()
 
+
         return TileBuilders.Tile.Builder()
             .setResourcesVersion(RESOURCES_VERSION)
             .setTileTimeline(singleTileTimeline)
-            .setFreshnessIntervalMillis(60 * 2)
+            .setFreshnessIntervalMillis(60000 * 5)
             .build()
     }
 }
@@ -148,8 +155,8 @@ private fun myLayout(context: Context, sleepTime: TimeDifference): LayoutElement
                         )
                         .build()
                 )
-                .setWidth(dp(45f))
-                .setHeight(dp(45f))
+                .setWidth(dp(40f))
+                .setHeight(dp(40f))
                 .setResourceId("sleep_icon")
                 .build()
         )
@@ -170,25 +177,6 @@ private fun myLayout(context: Context, sleepTime: TimeDifference): LayoutElement
 
 fun PreferencesHandler(sharedPreferences: SharedPreferences, key: String, default: String = "unknown"): String {
     return sharedPreferences.getString(key, default) ?: default
-}
-
-data class TimeDifference(val hours: Long, val minutes: Long)
-fun calculateTimeDifference(targetTime: LocalTime, now: LocalTime = LocalTime.now()): TimeDifference {
-    val currentDateTime = LocalTime.now()
-    val duration = if (targetTime.isBefore(now)) {
-        // If the target time is before the current time, it's on the next day
-        Duration.between(currentDateTime, targetTime).plusDays(1)
-    } else {
-        Duration.between(currentDateTime, targetTime)
-    }
-
-    val hours = duration.toHours()
-    val minutes = duration.minusHours(hours).toMinutes()
-    return TimeDifference(hours, minutes)
-}
-
-fun getBedtime(){
-
 }
 
 @Preview(

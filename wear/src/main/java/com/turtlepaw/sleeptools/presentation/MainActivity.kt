@@ -9,6 +9,8 @@ package com.turtlepaw.sleeptools.presentation
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,7 +26,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,8 +82,10 @@ import java.time.Duration
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextStyle
 import androidx.wear.compose.material.Colors
 import androidx.wear.compose.material.ToggleChipDefaults
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -123,6 +129,7 @@ fun WearPages(sharedPreferences: SharedPreferences){
                 )
             }
             composable("settings") {
+                TimeText()
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
@@ -224,14 +231,41 @@ fun WearApp(open: (route: String) -> Unit, wakeTime: LocalTime) {
         val focusRequester = rememberActiveFocusRequester()
         val scalingLazyListState = rememberScalingLazyListState()
         val formatter = DateTimeFormatter.ofPattern("hh:mm")
-        val timeDifference = calculateTimeDifference(wakeTime)
+        var timeDifference by remember {
+            mutableStateOf(calculateTimeDifference(wakeTime))
+        }
+
+        // Track the current minute
+        var currentMinute by remember { mutableIntStateOf(LocalTime.now().minute) }
+
+        // Use LaunchedEffect to launch a coroutine when the composable is first displayed
+        LaunchedEffect(wakeTime) {
+            val handler = Handler(Looper.getMainLooper())
+            // Use a coroutine to run the code on the main thread
+            while (true) {
+                // Delay until the next minute
+                delay(60_000 - (System.currentTimeMillis() % 60_000))
+
+                // Update the current minute
+                currentMinute = LocalTime.now().minute
+
+                // Re-compose the composable
+                handler.post {
+                    timeDifference = calculateTimeDifference(wakeTime)
+                    // You can trigger a re-composition here, for example by updating some state
+                    // or forcing a re-layout of your composable
+                    // Uncomment the line below if your composable doesn't re-compose automatically
+                    // currentMinute++
+                }
+            }
+            }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colors.background),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
-            // not working
             TimeText(
                 modifier = Modifier.scrollAway(scalingLazyListState)
             )
@@ -328,7 +362,7 @@ fun calculateTimeDifference(targetTime: LocalTime, now: LocalTime = LocalTime.no
     }
 
     val hours = duration.toHours()
-    val minutes = duration.minusHours(hours).toMinutes()
+    val minutes = duration.minusHours(hours).toMinutes() + 1
     return TimeDifference(hours, minutes)
 }
 
