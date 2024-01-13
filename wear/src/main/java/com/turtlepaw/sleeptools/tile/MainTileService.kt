@@ -39,7 +39,6 @@ import androidx.wear.protolayout.StateBuilders
 import androidx.wear.protolayout.expression.DynamicBuilders
 import androidx.wear.protolayout.expression.DynamicBuilders.DynamicDuration
 import androidx.wear.protolayout.expression.DynamicBuilders.DynamicString
-import androidx.wear.protolayout.expression.StateEntryBuilders
 import androidx.wear.tiles.TileService
 import com.turtlepaw.sleeptools.presentation.TimeDifference
 import com.turtlepaw.sleeptools.presentation.calculateTimeDifference

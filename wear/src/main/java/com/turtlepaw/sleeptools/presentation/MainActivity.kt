@@ -275,7 +275,7 @@ fun WearApp(open: (route: String) -> Unit, wakeTime: LocalTime) {
                 modifier = Modifier.scrollAway(scalingLazyListState)
             )
             ItemsListWithModifier(
-                reverseDirection = true,
+                reverseDirection = false,
                 modifier = Modifier
                     .rotaryWithScroll(
                         reverseDirection = true,
@@ -284,6 +284,63 @@ fun WearApp(open: (route: String) -> Unit, wakeTime: LocalTime) {
                     ),
                 scrollableState = scalingLazyListState,
             ) {
+                item {
+                    Image(
+                        painter = painterResource(id = R.drawable.sleep),
+                        contentDescription = "sleep",
+                        modifier = Modifier
+                            .size(32.dp)
+                            .padding(bottom = 8.dp)
+                    )
+                }
+                item {
+                    Text(
+                        text = "Sleep Prediction",
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+                item {
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(style = SpanStyle(fontSize = 36.sp)) {
+                                append("${timeDifference.hours}")
+                            }
+                            append("hr ")
+                            withStyle(style = SpanStyle(fontSize = 36.sp)) {
+                                append("${timeDifference.minutes}")
+                            }
+                            append("min")
+                        },
+                        color = Color(0xFFE4C6FF),
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                item {
+                    Text(
+                        text = "${wakeTime.format(formatter)} wake up",
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                item {
+                    Text(
+                        text = "Tip",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 4.dp),
+                                color = Color(0xFFE4C6FF)
+                    )
+                }
+                item {
+                    Text(
+                        text = "You should go to bed at 1:35 AM to be consistent",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 4.dp),
+                        color = Color(0xFF939AA3)
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.padding(vertical = 5.dp))
+                }
                 item {
                     Button(
                         onClick = {
@@ -310,63 +367,6 @@ fun WearApp(open: (route: String) -> Unit, wakeTime: LocalTime) {
                             color = Color.Black
                         )
                     }
-                }
-                item {
-                    Spacer(modifier = Modifier.padding(vertical = 5.dp))
-                }
-                item {
-                    Text(
-                        text = "You should go to bed at 1:35am to be consistent",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 4.dp),
-                        color = Color(0xFF939AA3)
-                    )
-                }
-                item {
-                    Text(
-                        text = "Tip",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 4.dp),
-                                color = Color(0xFFE4C6FF)
-                    )
-                }
-                item {
-                    Text(
-                        text = "${wakeTime.format(formatter)} wake up",
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-                item {
-                    Text(
-                        text = buildAnnotatedString {
-                            withStyle(style = SpanStyle(fontSize = 36.sp)) {
-                                append("${timeDifference.hours}")
-                            }
-                            append("hr ")
-                            withStyle(style = SpanStyle(fontSize = 36.sp)) {
-                                append("${timeDifference.minutes}")
-                            }
-                            append("min")
-                        },
-                        color = Color(0xFFE4C6FF),
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                item {
-                    Text(
-                        text = "Sleep Prediction",
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
-                item {
-                    Image(
-                        painter = painterResource(id = R.drawable.sleep),
-                        contentDescription = "sleep",
-                        modifier = Modifier
-                            .size(32.dp)
-                            .padding(bottom = 8.dp)
-                    )
                 }
             }
         }
