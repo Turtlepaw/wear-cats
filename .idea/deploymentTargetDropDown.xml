@@ -6,7 +6,21 @@
         <State />
       </entry>
       <entry key="wear">
-        <State />
+        <State>
+          <targetSelectedWithDropDown>
+            <Target>
+              <type value="BOOT_WITH_SNAPSHOT_TARGET" />
+              <deviceKey>
+                <Key>
+                  <type value="VIRTUAL_DEVICE_PATH" />
+                  <value value="C:\Users\olivi\.android\avd\Wear_OS.avd" />
+                </Key>
+              </deviceKey>
+              <snapshotKey value="C:\Users\olivi\.android\avd\Wear_OS.avd\snapshots\snap_2023-12-28_16-39-27" />
+            </Target>
+          </targetSelectedWithDropDown>
+          <timeTargetWasSelectedWithDropDown value="2024-01-13T21:13:12.591481Z" />
+        </State>
       </entry>
     </value>
   </component>

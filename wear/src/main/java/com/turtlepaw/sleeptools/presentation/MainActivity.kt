@@ -11,7 +11,6 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -19,7 +18,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,7 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,9 +40,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,40 +57,34 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.material.Colors
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.MaterialTheme.colors
+import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Switch
 import androidx.wear.compose.material.SwitchDefaults
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.ToggleChip
+import androidx.wear.compose.material.ToggleChipDefaults
 import androidx.wear.compose.material.scrollAway
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
+import com.google.android.horologist.composables.TimePickerWith12HourClock
+import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.sleeptools.R
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
-import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
-import com.google.android.horologist.composables.TimePickerWith12HourClock
+import com.turtlepaw.sleeptools.utils.TimeManager
+import kotlinx.coroutines.delay
+import java.time.Duration
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Locale
-import java.time.LocalTime
-import java.time.Duration
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
-import androidx.compose.ui.unit.em
-import androidx.wear.compose.material.Colors
-import androidx.wear.compose.material.ToggleChipDefaults
-import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,110 +96,50 @@ class MainActivity : ComponentActivity() {
         val sharedPreferences = getSharedPreferences("SleepTurtlepawSettings", Context.MODE_PRIVATE)
 
         setContent {
-            WearPages(sharedPreferences)
+            WearPages(sharedPreferences, this)
         }
     }
 }
 
 @Composable
-fun WearPages(sharedPreferences: SharedPreferences){
+fun WearPages(sharedPreferences: SharedPreferences, context: Context){
     SleepTheme {
-        val formatter = DateTimeFormatter.ofPattern("hh:mm a")
         val navController = rememberSwipeDismissableNavController()
+        val alarmManager = AlarmsManager()
         val wakeTimeString = sharedPreferences.getString("wake_time", "10:00") // Default to midnight
         val useAlarmBool = sharedPreferences.getBoolean("use_alarm", true) // Default to on
         var useAlarm by remember { mutableStateOf(useAlarmBool) }
-        var wakeTime = try {
-            LocalTime.parse(wakeTimeString)
-        } catch (e: DateTimeParseException) {
-            // Handle parsing error, use a default value, or show an error message
-            LocalTime.NOON
-        }
+        val nextAlarm = alarmManager.fetchAlarms(context);
+        val timeManager = TimeManager();
+        var wakeTime = timeManager.getWakeTime(useAlarm, nextAlarm, wakeTimeString);
         SwipeDismissableNavHost(
             navController = navController,
             startDestination = "home"
         ) {
             composable("home") {
                 WearApp(
-                    open = { route ->
+                    navigate = { route ->
                         navController.navigate(route)
                     },
-                    wakeTime
+                    wakeTime,
+                    nextAlarm = nextAlarm ?: wakeTime,
+                    timeManager
                 )
             }
             composable("settings") {
-                TimeText()
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .fillMaxSize()
-                ){
-                    Button(
-                        onClick = {
-                            navController.navigate("date-picker")
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFFE4C6FF)
-                        )
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.sleep),
-                            contentDescription = "sleep",
-                            modifier = Modifier
-                                .size(32.dp)
-                                .padding(bottom = 8.dp)
-                        )
-                        Text(
-                            text = "Wake Time: ${wakeTime.format(formatter)}",
-                            color = Color.Black
-                        )
-                    }
-                    ToggleChip(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        checked = useAlarm,
-                        onCheckedChange = {isEnabled ->
-                            useAlarm = isEnabled
-                            val editor = sharedPreferences.edit()
-                            editor.putBoolean("use_alarm", isEnabled)
-                            editor.apply()
-                        },
-                        label = {
-                            Text("Use Alarm", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        },
-                        appIcon = {
-                            Icon(
-                                painter = painterResource(id = if (useAlarm) R.drawable.alarm_on else R.drawable.alarm_off),
-                                contentDescription = "alarm",
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .wrapContentSize(align = Alignment.Center),
-                            )
-                        },
-                        toggleControl = {
-                            Switch(
-                                checked = useAlarm,
-                                enabled = true,
-                                modifier = Modifier.semantics {
-                                    this.contentDescription =
-                                        if (useAlarm) "On" else "Off"
-                                },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color(0xFFE4C6FF)
-                                )
-                            )
-                        },
-                        enabled = true,
-                        colors = ToggleChipDefaults.toggleChipColors(
-                            checkedEndBackgroundColor = Color(0x80E4C6FF)
-                        )
-                    )
-                }
+                WearSettings(
+                    navigate = { route ->
+                        navController.navigate(route)
+                    },
+                    wakeTime,
+                    setAlarm = { value ->
+                        useAlarm = value;
+                        val editor = sharedPreferences.edit()
+                        editor.putBoolean("use_alarm", value)
+                        editor.apply()
+                    },
+                    useAlarm
+                )
             }
             composable("date-picker"){
                 MaterialTheme(
@@ -229,15 +163,100 @@ fun WearPages(sharedPreferences: SharedPreferences){
     }
 }
 
+@Composable
+fun WearSettings(
+    navigate: (route: String) -> Unit,
+    wakeTime: LocalTime,
+    setAlarm: (value: Boolean) -> Unit,
+    useAlarm: Boolean
+){
+    SleepTheme {
+        val formatter = DateTimeFormatter.ofPattern("hh:mm a")
+        TimeText()
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxSize()
+        ){
+            Button(
+                onClick = {
+                    navigate("date-picker")
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = Color(0xFFE4C6FF)
+                )
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.sleep),
+                    contentDescription = "sleep",
+                    modifier = Modifier
+                        .size(32.dp)
+                        .padding(bottom = 8.dp)
+                )
+                Text(
+                    text = "Wake Time: ${wakeTime.format(formatter)}",
+                    color = Color.Black
+                )
+            }
+            ToggleChip(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                checked = useAlarm,
+                onCheckedChange = {isEnabled ->
+                    setAlarm(isEnabled)
+                },
+                label = {
+                    Text("Use Alarm", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                },
+                appIcon = {
+                    Icon(
+                        painter = painterResource(id = if (useAlarm) R.drawable.alarm_on else R.drawable.alarm_off),
+                        contentDescription = "alarm",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .wrapContentSize(align = Alignment.Center),
+                    )
+                },
+                toggleControl = {
+                    Switch(
+                        checked = useAlarm,
+                        enabled = true,
+                        modifier = Modifier.semantics {
+                            this.contentDescription =
+                                if (useAlarm) "On" else "Off"
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color(0xFFE4C6FF)
+                        )
+                    )
+                },
+                enabled = true,
+                colors = ToggleChipDefaults.toggleChipColors(
+                    checkedEndBackgroundColor = Color(0x80E4C6FF)
+                )
+            )
+        }
+    }
+}
 @OptIn(ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class)
 @Composable
-fun WearApp(open: (route: String) -> Unit, wakeTime: LocalTime) {
+fun WearApp(
+    navigate: (route: String) -> Unit,
+    wakeTime: LocalTime,
+    nextAlarm: LocalTime,
+    timeManager: TimeManager
+) {
     SleepTheme {
         val focusRequester = rememberActiveFocusRequester()
         val scalingLazyListState = rememberScalingLazyListState()
         val formatter = DateTimeFormatter.ofPattern("hh:mm")
         var timeDifference by remember {
-            mutableStateOf(calculateTimeDifference(wakeTime))
+            mutableStateOf(timeManager.calculateTimeDifference(wakeTime))
         }
 
         // Track the current minute
@@ -256,7 +275,9 @@ fun WearApp(open: (route: String) -> Unit, wakeTime: LocalTime) {
 
                 // Re-compose the composable
                 handler.post {
-                    timeDifference = calculateTimeDifference(wakeTime)
+                    timeDifference = timeManager.calculateTimeDifference(nextAlarm)
+                    // we used to use wakeTime but now we use
+                    // nextAlarm
                     // You can trigger a re-composition here, for example by updating some state
                     // or forcing a re-layout of your composable
                     // Uncomment the line below if your composable doesn't re-compose automatically
@@ -265,96 +286,29 @@ fun WearApp(open: (route: String) -> Unit, wakeTime: LocalTime) {
             }
             }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colors.background),
-            contentAlignment = Alignment.Center,
-        ) {
-            TimeText(
-                modifier = Modifier.scrollAway(scalingLazyListState)
-            )
-            ItemsListWithModifier(
-                reverseDirection = false,
+            Box(
                 modifier = Modifier
-                    .rotaryWithScroll(
-                        reverseDirection = true,
-                        focusRequester = focusRequester,
-                        scrollableState = scalingLazyListState,
-                    ),
-                scrollableState = scalingLazyListState,
+                    .fillMaxSize()
+                    .background(colors.background),
+                contentAlignment = Alignment.Center,
             ) {
-                item {
-                    Image(
-                        painter = painterResource(id = R.drawable.sleep),
-                        contentDescription = "sleep",
-                        modifier = Modifier
-                            .size(32.dp)
-                            .padding(bottom = 8.dp)
-                    )
-                }
-                item {
-                    Text(
-                        text = "Sleep Prediction",
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
-                item {
-                    Text(
-                        text = buildAnnotatedString {
-                            withStyle(style = SpanStyle(fontSize = 36.sp)) {
-                                append("${timeDifference.hours}")
-                            }
-                            append("hr ")
-                            withStyle(style = SpanStyle(fontSize = 36.sp)) {
-                                append("${timeDifference.minutes}")
-                            }
-                            append("min")
-                        },
-                        color = Color(0xFFE4C6FF),
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                item {
-                    Text(
-                        text = "${wakeTime.format(formatter)} wake up",
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-                item {
-                    Text(
-                        text = "Tip",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 4.dp),
-                                color = Color(0xFFE4C6FF)
-                    )
-                }
-                item {
-                    Text(
-                        text = "You should go to bed at 1:35 AM to be consistent",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 4.dp),
-                        color = Color(0xFF939AA3)
-                    )
-                }
-                item {
-                    Spacer(modifier = Modifier.padding(vertical = 5.dp))
-                }
-                item {
-                    Button(
-                        onClick = {
-                            open("settings")
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                bottom = 60.dp
-                            ),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFFE4C6FF)
-                        )
-                    ) {
+                TimeText(
+                    modifier = Modifier.scrollAway(scalingLazyListState)
+                )
+                PositionIndicator(
+                    scalingLazyListState = scalingLazyListState
+                )
+                ItemsListWithModifier(
+                    reverseDirection = false,
+                    modifier = Modifier
+                        .rotaryWithScroll(
+                            reverseDirection = true,
+                            focusRequester = focusRequester,
+                            scrollableState = scalingLazyListState,
+                        ),
+                    scrollableState = scalingLazyListState,
+                ) {
+                    item {
                         Image(
                             painter = painterResource(id = R.drawable.sleep),
                             contentDescription = "sleep",
@@ -362,30 +316,85 @@ fun WearApp(open: (route: String) -> Unit, wakeTime: LocalTime) {
                                 .size(32.dp)
                                 .padding(bottom = 8.dp)
                         )
+                    }
+                    item {
                         Text(
-                            text = "Settings",
-                            color = Color.Black
+                            text = "Sleep Prediction",
+                            modifier = Modifier.padding(bottom = 4.dp)
                         )
+                    }
+                    item {
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(style = SpanStyle(fontSize = 36.sp)) {
+                                    append("${timeDifference.hours}")
+                                }
+                                append("hr ")
+                                withStyle(style = SpanStyle(fontSize = 36.sp)) {
+                                    append("${timeDifference.minutes}")
+                                }
+                                append("min")
+                            },
+                            color = Color(0xFFE4C6FF),
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    item {
+                        Text(
+                            text = "${nextAlarm.format(formatter)} wake up",
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                    item {
+                        Text(
+                            text = "Tip",
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 4.dp),
+                            color = Color(0xFFE4C6FF)
+                        )
+                    }
+                    item {
+                        Text(
+                            text = "You should go to bed at 1:35 AM to be consistent",
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 4.dp),
+                            //color = Color(0xFF939AA3)
+                        )
+                    }
+                    item {
+                        Spacer(modifier = Modifier.padding(vertical = 5.dp))
+                    }
+                    item {
+                        Button(
+                            onClick = {
+                                navigate("settings")
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    bottom = 60.dp
+                                ),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Color(0xFFE4C6FF)
+                            )
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.sleep),
+                                contentDescription = "sleep",
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .padding(bottom = 8.dp)
+                            )
+                            Text(
+                                text = "Settings",
+                                color = Color.Black
+                            )
+                        }
                     }
                 }
             }
-        }
     }
-}
-
-data class TimeDifference(val hours: Long, val minutes: Long)
-fun calculateTimeDifference(targetTime: LocalTime, now: LocalTime = LocalTime.now()): TimeDifference {
-    val currentDateTime = LocalTime.now()
-    val duration = if (targetTime.isBefore(now)) {
-        // If the target time is before the current time, it's on the next day
-        Duration.between(currentDateTime, targetTime).plusDays(1)
-    } else {
-        Duration.between(currentDateTime, targetTime)
-    }
-
-    val hours = duration.toHours()
-    val minutes = duration.minusHours(hours).toMinutes() + 1
-    return TimeDifference(hours, minutes)
 }
 
 @Composable
@@ -420,12 +429,24 @@ fun stringToBoolean(input: String): Boolean {
     }
 }
 
-
 @Preview(device = WearDevices.LARGE_ROUND, showSystemUi = true)
 @Composable
 fun DefaultPreview() {
     WearApp(
-        open = {},
-        wakeTime = LocalTime.of(10, 30)
+        navigate = {},
+        wakeTime = LocalTime.of(10, 30),
+        nextAlarm = LocalTime.of(7, 30),
+        timeManager = TimeManager()
+    )
+}
+
+@Preview(device = WearDevices.LARGE_ROUND, showSystemUi = true)
+@Composable
+fun SettingsPreview() {
+    WearSettings(
+        navigate = {},
+        wakeTime = LocalTime.of(10, 30),
+        setAlarm = {},
+        useAlarm = true
     )
 }

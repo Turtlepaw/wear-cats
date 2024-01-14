@@ -3,6 +3,7 @@ package com.turtlepaw.sleeptools.tile
 import android.app.TaskStackBuilder
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
@@ -27,21 +28,9 @@ import com.google.android.horologist.compose.tools.LayoutRootPreview
 import com.google.android.horologist.compose.tools.buildDeviceParameters
 import com.google.android.horologist.tiles.SuspendingTileService
 import com.turtlepaw.sleeptools.R
-import com.turtlepaw.sleeptools.presentation.MainActivity
-import java.time.Duration
+import com.turtlepaw.sleeptools.utils.TimeDifference
+import com.turtlepaw.sleeptools.utils.TimeManager
 import java.time.LocalTime
-import android.content.SharedPreferences
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.sp
-import androidx.wear.protolayout.StateBuilders
-import androidx.wear.protolayout.expression.DynamicBuilders
-import androidx.wear.protolayout.expression.DynamicBuilders.DynamicDuration
-import androidx.wear.protolayout.expression.DynamicBuilders.DynamicString
-import androidx.wear.tiles.TileService
-import com.turtlepaw.sleeptools.presentation.TimeDifference
-import com.turtlepaw.sleeptools.presentation.calculateTimeDifference
 import java.time.format.DateTimeParseException
 
 
@@ -80,11 +69,12 @@ class MainTileService : SuspendingTileService() {
             Log.d("Open App", "Opening main activity...")
             TaskStackBuilder.create(this)
                 .addNextIntentWithParentStack(
-                    Intent(this, MainActivity::class.java)
+                    Intent(this, MainTileService::class.java)
                 )
                 .startActivities()
         }
 
+        val timeManager = TimeManager();
         val sharedPreferences = getSharedPreferences("SleepTurtlepawSettings", Context.MODE_PRIVATE)
         val wakeTimeStr = sharedPreferences.getString("wake_time", "10:00")
         val wakeTime = try {
@@ -93,7 +83,7 @@ class MainTileService : SuspendingTileService() {
             // Handle parsing error, use a default value, or show an error message
             LocalTime.NOON
         }
-        val sleepTime = calculateTimeDifference(wakeTime)
+        val sleepTime = timeManager.calculateTimeDifference(wakeTime)
 
 //        getUpdater(this)
 //            .requestUpdate(MainTileService::class.java);
@@ -186,5 +176,6 @@ fun PreferencesHandler(sharedPreferences: SharedPreferences, key: String, defaul
 )
 @Composable
 fun TilePreview() {
-    LayoutRootPreview(root = tileLayout(LocalContext.current, calculateTimeDifference(LocalTime.NOON)))
+    val timeManager = TimeManager()
+    LayoutRootPreview(root = tileLayout(LocalContext.current, timeManager.calculateTimeDifference(LocalTime.NOON)))
 }

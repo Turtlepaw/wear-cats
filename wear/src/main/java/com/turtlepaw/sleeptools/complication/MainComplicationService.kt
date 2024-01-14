@@ -1,22 +1,15 @@
 package com.turtlepaw.sleeptools.complication
 
 import android.content.Context
-import android.graphics.drawable.Icon
-import androidx.compose.ui.res.painterResource
-import androidx.wear.compose.material.Icon
 import androidx.wear.watchface.complications.data.ComplicationData
 import androidx.wear.watchface.complications.data.ComplicationType
-import androidx.wear.watchface.complications.data.GoalProgressComplicationData
 import androidx.wear.watchface.complications.data.LongTextComplicationData
-import androidx.wear.watchface.complications.data.MonochromaticImage
-import androidx.wear.watchface.complications.data.NoPermissionComplicationData
 import androidx.wear.watchface.complications.data.PlainComplicationText
 import androidx.wear.watchface.complications.data.RangedValueComplicationData
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
-import com.turtlepaw.sleeptools.R
-import com.turtlepaw.sleeptools.presentation.calculateTimeDifference
+import com.turtlepaw.sleeptools.utils.TimeManager
 import java.time.LocalTime
 import java.time.format.DateTimeParseException
 
@@ -39,15 +32,16 @@ class MainComplicationService : SuspendingComplicationDataSourceService() {
     }
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
+        val timeManager = TimeManager()
         val sharedPreferences = getSharedPreferences("SleepTurtlepawSettings", Context.MODE_PRIVATE)
         val wakeTimeString = sharedPreferences.getString("wake_time", "10:00")
-        var wakeTime = try {
+        val wakeTime = try {
             LocalTime.parse(wakeTimeString)
         } catch (e: DateTimeParseException) {
             // Handle parsing error, use a default value, or show an error message
             LocalTime.NOON
         }
-        val timeDifference = calculateTimeDifference(wakeTime)
+        val timeDifference = timeManager.calculateTimeDifference(wakeTime)
         val timeDifferenceInHours = timeDifference.hours / 3600.0f
 
         return createComplicationData(
