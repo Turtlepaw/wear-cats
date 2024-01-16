@@ -11,8 +11,8 @@ android {
     defaultConfig {
         applicationId = "com.turtlepaw.sleeptools"
         minSdk = 30
-        targetSdk = 34
-        versionCode = 1
+        targetSdk = 33
+        versionCode = 2
         versionName = "1.0"
         vectorDrawables {
             useSupportLibrary = true
@@ -64,14 +64,14 @@ dependencies {
     implementation(libs.horologist.compose.tools)
     implementation(libs.horologist.tiles)
     implementation(libs.androidx.watchface.complications.data.source.ktx)
-    implementation("com.google.android.horologist:horologist-compose-layout:0.5.10")
-    implementation("androidx.wear.compose:compose-navigation:1.1.2")
-    implementation("com.google.android.horologist:horologist-composables:0.5.10")
-    implementation("com.google.android.gms:play-services-pal:20.2.0")
+    implementation(libs.horologist.compose.layout)
+    implementation(libs.androidx.compose.navigation)
+    implementation(libs.horologist.composables)
+    implementation(libs.play.services.pal)
     implementation(libs.androidx.wear.tooling.preview)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    wearApp(project(":wear"))
+    //wearApp(project(":wear"))
 }

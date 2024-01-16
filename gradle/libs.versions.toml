@@ -1,18 +1,21 @@
 [versions]
 agp = "8.3.0-alpha13"
+composeNavigation = "1.2.1"
+horologistComposeLayout = "0.5.10"
 kotlin = "1.9.0"
 coreKtx = "1.12.0"
 junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
 appcompat = "1.6.1"
+playServicesPal = "20.2.0"
 playServicesWearable = "18.1.0"
-material = "1.10.0"
+material = "1.11.0"
 constraintlayout = "2.1.4"
 composeBom = "2023.10.01"
 composeMaterial = "1.2.1"
 composeFoundation = "1.2.1"
-activityCompose = "1.8.1"
+activityCompose = "1.8.2"
 coreSplashscreen = "1.0.1"
 tiles = "1.2.0"
 tilesMaterial = "1.2.0"
@@ -22,11 +25,15 @@ watchfaceComplicationsDataSourceKtx = "1.2.0"
 wearToolingPreview = "1.0.0"
 
 [libraries]
+androidx-compose-navigation = { module = "androidx.wear.compose:compose-navigation", version.ref = "composeNavigation" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+horologist-composables = { module = "com.google.android.horologist:horologist-composables", version.ref = "horologistComposeLayout" }
+horologist-compose-layout = { module = "com.google.android.horologist:horologist-compose-layout", version.ref = "horologistComposeLayout" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+play-services-pal = { module = "com.google.android.gms:play-services-pal", version.ref = "playServicesPal" }
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }

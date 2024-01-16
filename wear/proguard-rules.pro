@@ -19,3 +19,13 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# Keep all classes in your application package
+-keep class com.turtlepaw.sleeptools.** { *; }
+
+# Keep all classes in Android Wear Compose library
+-keep class androidx.wear.compose.** { *; }
+
+# Keep all classes in AndroidX Compose library
+-keep class androidx.compose.** { *; }
+
+# Add other specific rules as needed for your dependencies

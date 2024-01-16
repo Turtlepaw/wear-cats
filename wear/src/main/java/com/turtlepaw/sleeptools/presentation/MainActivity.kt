@@ -17,7 +17,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -77,14 +76,28 @@ import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.composables.TimePickerWith12HourClock
 import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.sleeptools.R
+import com.turtlepaw.sleeptools.presentation.pages.WakeTimePicker
+import com.turtlepaw.sleeptools.presentation.pages.WearHome
+import com.turtlepaw.sleeptools.presentation.pages.WearSettings
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
+import com.turtlepaw.sleeptools.utils.AlarmType
+import com.turtlepaw.sleeptools.utils.AlarmsManager
+import com.turtlepaw.sleeptools.utils.Settings
 import com.turtlepaw.sleeptools.utils.TimeManager
 import kotlinx.coroutines.delay
-import java.time.Duration
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 import java.util.Locale
+
+enum class Routes(private val route: String) {
+    HOME("/home"),
+    SETTINGS("/settings"),
+    TIME_PICKER("/time-picker");
+
+    fun getRoute(): String {
+        return route
+    }
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -104,337 +117,102 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun WearPages(sharedPreferences: SharedPreferences, context: Context){
     SleepTheme {
+        // Creates a navigation controller for our pages
         val navController = rememberSwipeDismissableNavController()
-        val alarmManager = AlarmsManager()
-        val wakeTimeString = sharedPreferences.getString("wake_time", "10:00") // Default to midnight
-        val useAlarmBool = sharedPreferences.getBoolean("use_alarm", true) // Default to on
-        var useAlarm by remember { mutableStateOf(useAlarmBool) }
-        val nextAlarm = alarmManager.fetchAlarms(context);
+        // Creates a new alarm & time manager
         val timeManager = TimeManager();
-        var wakeTime = timeManager.getWakeTime(useAlarm, nextAlarm, wakeTimeString);
+        val alarmManager = AlarmsManager()
+        // Fetches the wake time from settings
+        val wakeTimeString = sharedPreferences.getString(Settings.WAKE_TIME.getKey(), Settings.WAKE_TIME.getDefault()) // Default to midnight
+        // Use Alarm - uses system alarm as wake time
+        val useAlarmBool = sharedPreferences.getBoolean(Settings.ALARM.getKey(), Settings.ALARM.getDefaultAsBoolean()) // Default to on
+        var useAlarm by remember { mutableStateOf(useAlarmBool) }
+        // Use Alerts - sends alerts when to go to bed
+        val useAlertsBool = sharedPreferences.getBoolean(Settings.ALERTS.getKey(), Settings.ALERTS.getDefaultAsBoolean()) // Default to on
+        var useAlerts by remember { mutableStateOf(useAlertsBool) }
+        // Fetches the next alarm from android's alarm manager
+        val nextAlarm = alarmManager.fetchAlarms(context);
+        // Parses the wake time and decides if it should use
+        // user defined or system defined
+        var wakeTime = timeManager.getWakeTime(
+            useAlarm,
+            nextAlarm,
+            wakeTimeString,
+            Settings.WAKE_TIME.getDefaultAsLocalTime()
+        );
+        val userWakeTime = timeManager.parseTime(wakeTimeString, Settings.WAKE_TIME.getDefaultAsLocalTime());
+
         SwipeDismissableNavHost(
             navController = navController,
-            startDestination = "home"
+            startDestination = Routes.HOME.getRoute()
         ) {
-            composable("home") {
-                WearApp(
+            composable(Routes.HOME.getRoute()) {
+                WearHome(
                     navigate = { route ->
                         navController.navigate(route)
                     },
                     wakeTime,
-                    nextAlarm = nextAlarm ?: wakeTime,
+                    nextAlarm = nextAlarm ?: wakeTime.first,
                     timeManager
                 )
             }
-            composable("settings") {
+            composable(Routes.SETTINGS.getRoute()) {
                 WearSettings(
                     navigate = { route ->
                         navController.navigate(route)
                     },
+                    openWakeTimePicker = {
+                      navController.navigate(Routes.TIME_PICKER.getRoute())
+                    },
                     wakeTime,
+                    userWakeTime,
                     setAlarm = { value ->
                         useAlarm = value;
                         val editor = sharedPreferences.edit()
-                        editor.putBoolean("use_alarm", value)
+                        editor.putBoolean(Settings.ALARM.getKey(), value)
                         editor.apply()
                     },
-                    useAlarm
+                    useAlarm,
+                    setAlerts = { value ->
+                        useAlerts = value;
+                        val editor = sharedPreferences.edit()
+                        editor.putBoolean(Settings.ALERTS.getKey(), value)
+                        editor.apply()
+                    },
+                    useAlerts
                 )
             }
-            composable("date-picker"){
-                MaterialTheme(
-                    colors = Colors(
-                        primary = Color(0xFFE4C6FF),
-                        secondary = Color(0xFFE4C6FF)
-                    )
-                ) {
-                    TimePickerWith12HourClock(
-                        onTimeConfirm = { time ->
-                            wakeTime = time
-                            val editor = sharedPreferences.edit()
-                            editor.putString("wake_time", time.toString())
-                            editor.apply()
-                            navController.navigate("settings")
-                        }
-                    )
-                }
+            composable(Routes.TIME_PICKER.getRoute()){
+                WakeTimePicker(
+                    closePicker = {
+                        navController.popBackStack()
+                    },
+                    userWakeTime,
+                    setWakeTime = { value ->
+                        // Set the wake time ONLY if
+                        // it's user defined
+                        if(wakeTime.second === AlarmType.USER_DEFINED)
+                            wakeTime = Pair(value, AlarmType.USER_DEFINED);
+
+                        val editor = sharedPreferences.edit()
+                        editor.putString("wake_time", value.toString())
+                        editor.apply()
+                    }
+                )
             }
         }
-    }
-}
-
-@Composable
-fun WearSettings(
-    navigate: (route: String) -> Unit,
-    wakeTime: LocalTime,
-    setAlarm: (value: Boolean) -> Unit,
-    useAlarm: Boolean
-){
-    SleepTheme {
-        val formatter = DateTimeFormatter.ofPattern("hh:mm a")
-        TimeText()
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxSize()
-        ){
-            Button(
-                onClick = {
-                    navigate("date-picker")
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color(0xFFE4C6FF)
-                )
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.sleep),
-                    contentDescription = "sleep",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .padding(bottom = 8.dp)
-                )
-                Text(
-                    text = "Wake Time: ${wakeTime.format(formatter)}",
-                    color = Color.Black
-                )
-            }
-            ToggleChip(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                checked = useAlarm,
-                onCheckedChange = {isEnabled ->
-                    setAlarm(isEnabled)
-                },
-                label = {
-                    Text("Use Alarm", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                },
-                appIcon = {
-                    Icon(
-                        painter = painterResource(id = if (useAlarm) R.drawable.alarm_on else R.drawable.alarm_off),
-                        contentDescription = "alarm",
-                        modifier = Modifier
-                            .size(24.dp)
-                            .wrapContentSize(align = Alignment.Center),
-                    )
-                },
-                toggleControl = {
-                    Switch(
-                        checked = useAlarm,
-                        enabled = true,
-                        modifier = Modifier.semantics {
-                            this.contentDescription =
-                                if (useAlarm) "On" else "Off"
-                        },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFFE4C6FF)
-                        )
-                    )
-                },
-                enabled = true,
-                colors = ToggleChipDefaults.toggleChipColors(
-                    checkedEndBackgroundColor = Color(0x80E4C6FF)
-                )
-            )
-        }
-    }
-}
-@OptIn(ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class)
-@Composable
-fun WearApp(
-    navigate: (route: String) -> Unit,
-    wakeTime: LocalTime,
-    nextAlarm: LocalTime,
-    timeManager: TimeManager
-) {
-    SleepTheme {
-        val focusRequester = rememberActiveFocusRequester()
-        val scalingLazyListState = rememberScalingLazyListState()
-        val formatter = DateTimeFormatter.ofPattern("hh:mm")
-        var timeDifference by remember {
-            mutableStateOf(timeManager.calculateTimeDifference(wakeTime))
-        }
-
-        // Track the current minute
-        var currentMinute by remember { mutableIntStateOf(LocalTime.now().minute) }
-
-        // Use LaunchedEffect to launch a coroutine when the composable is first displayed
-        LaunchedEffect(wakeTime) {
-            val handler = Handler(Looper.getMainLooper())
-            // Use a coroutine to run the code on the main thread
-            while (true) {
-                // Delay until the next minute
-                delay(60_000 - (System.currentTimeMillis() % 60_000))
-
-                // Update the current minute
-                currentMinute = LocalTime.now().minute
-
-                // Re-compose the composable
-                handler.post {
-                    timeDifference = timeManager.calculateTimeDifference(nextAlarm)
-                    // we used to use wakeTime but now we use
-                    // nextAlarm
-                    // You can trigger a re-composition here, for example by updating some state
-                    // or forcing a re-layout of your composable
-                    // Uncomment the line below if your composable doesn't re-compose automatically
-                    // currentMinute++
-                }
-            }
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(colors.background),
-                contentAlignment = Alignment.Center,
-            ) {
-                TimeText(
-                    modifier = Modifier.scrollAway(scalingLazyListState)
-                )
-                PositionIndicator(
-                    scalingLazyListState = scalingLazyListState
-                )
-                ItemsListWithModifier(
-                    reverseDirection = false,
-                    modifier = Modifier
-                        .rotaryWithScroll(
-                            reverseDirection = true,
-                            focusRequester = focusRequester,
-                            scrollableState = scalingLazyListState,
-                        ),
-                    scrollableState = scalingLazyListState,
-                ) {
-                    item {
-                        Image(
-                            painter = painterResource(id = R.drawable.sleep),
-                            contentDescription = "sleep",
-                            modifier = Modifier
-                                .size(32.dp)
-                                .padding(bottom = 8.dp)
-                        )
-                    }
-                    item {
-                        Text(
-                            text = "Sleep Prediction",
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                    }
-                    item {
-                        Text(
-                            text = buildAnnotatedString {
-                                withStyle(style = SpanStyle(fontSize = 36.sp)) {
-                                    append("${timeDifference.hours}")
-                                }
-                                append("hr ")
-                                withStyle(style = SpanStyle(fontSize = 36.sp)) {
-                                    append("${timeDifference.minutes}")
-                                }
-                                append("min")
-                            },
-                            color = Color(0xFFE4C6FF),
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    item {
-                        Text(
-                            text = "${nextAlarm.format(formatter)} wake up",
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                    item {
-                        Text(
-                            text = "Tip",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 4.dp),
-                            color = Color(0xFFE4C6FF)
-                        )
-                    }
-                    item {
-                        Text(
-                            text = "You should go to bed at 1:35 AM to be consistent",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 4.dp),
-                            //color = Color(0xFF939AA3)
-                        )
-                    }
-                    item {
-                        Spacer(modifier = Modifier.padding(vertical = 5.dp))
-                    }
-                    item {
-                        Button(
-                            onClick = {
-                                navigate("settings")
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    bottom = 60.dp
-                                ),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = Color(0xFFE4C6FF)
-                            )
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.sleep),
-                                contentDescription = "sleep",
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .padding(bottom = 8.dp)
-                            )
-                            Text(
-                                text = "Settings",
-                                color = Color.Black
-                            )
-                        }
-                    }
-                }
-            }
-    }
-}
-
-@Composable
-fun ItemsListWithModifier(
-    reverseDirection: Boolean = false,
-    modifier: Modifier,
-    scrollableState: ScalingLazyListState,
-    items: ScalingLazyListScope.() -> Unit,
-) {
-    val flingBehavior = snapFlingBehavior(state = scrollableState)
-    ScalingLazyColumn(
-        modifier = modifier.fillMaxSize(),
-        state = scrollableState,
-        reverseLayout = reverseDirection,
-        flingBehavior = flingBehavior,
-        scalingParams = scalingParams(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(
-            space = 4.dp,
-            alignment = Alignment.Top,
-        ),
-        content = items,
-    )
-}
-
-fun stringToBoolean(input: String): Boolean {
-    val lowerCaseInput = input.lowercase(Locale.ROOT)
-    return when (lowerCaseInput) {
-        "true", "1", "yes", "on" -> true
-        "false", "0", "no", "off" -> false
-        else -> false
     }
 }
 
 @Preview(device = WearDevices.LARGE_ROUND, showSystemUi = true)
 @Composable
 fun DefaultPreview() {
-    WearApp(
+    WearHome(
         navigate = {},
-        wakeTime = LocalTime.of(10, 30),
+        wakeTime = Pair(
+            LocalTime.of(10, 30),
+            AlarmType.SYSTEM_ALARM
+        ),
         nextAlarm = LocalTime.of(7, 30),
         timeManager = TimeManager()
     )
@@ -445,8 +223,15 @@ fun DefaultPreview() {
 fun SettingsPreview() {
     WearSettings(
         navigate = {},
-        wakeTime = LocalTime.of(10, 30),
+        openWakeTimePicker = {},
+        wakeTime = Pair(
+            Settings.WAKE_TIME.getDefaultAsLocalTime(),
+            AlarmType.SYSTEM_ALARM
+        ),
+        userWakeTime = Settings.WAKE_TIME.getDefaultAsLocalTime(),
         setAlarm = {},
-        useAlarm = true
+        useAlarm = Settings.ALARM.getDefaultAsBoolean(),
+        setAlerts = {},
+        alerts = Settings.ALERTS.getDefaultAsBoolean()
     )
 }
