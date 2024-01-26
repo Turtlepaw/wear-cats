@@ -26,6 +26,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
@@ -38,6 +39,7 @@ import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.scrollAway
+import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.sleeptools.R
@@ -56,7 +58,8 @@ fun WearHome(
     navigate: (route: String) -> Unit,
     wakeTime: Pair<LocalTime, AlarmType>,
     nextAlarm: LocalTime,
-    timeManager: TimeManager
+    timeManager: TimeManager,
+    lastBedtime: LocalTime?
 ) {
     SleepTheme {
         val focusRequester = rememberActiveFocusRequester()
@@ -152,21 +155,23 @@ fun WearHome(
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
-                item {
-                    Text(
-                        text = "Tip",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 4.dp),
-                        color = Color(0xFFE4C6FF)
-                    )
-                }
-                item {
-                    Text(
-                        text = "You should go to bed at 1:35 AM to be consistent",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 4.dp),
-                        //color = Color(0xFF939AA3)
-                    )
+                if(lastBedtime != null){
+                    item {
+                        Text(
+                            text = "Tip",
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 4.dp),
+                            color = Color(0xFFE4C6FF)
+                        )
+                    }
+                    item {
+                        Text(
+                            text = "You should go to bed at ${formatter.format(lastBedtime)} to be consistent",
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 4.dp),
+                            //color = Color(0xFF939AA3)
+                        )
+                    }
                 }
                 item {
                     Spacer(modifier = Modifier.padding(vertical = 5.dp))
@@ -197,7 +202,7 @@ fun WearHome(
                 }
                 item {
                     Text(
-                        text = "Made with ♥️ by turtlepaw",
+                        text = "Made with 💤 by turtlepaw",
                         color = Color.White,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -216,4 +221,19 @@ fun WearHome(
             }
         }
     }
+}
+
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
+@Composable
+fun DefaultPreview() {
+    WearHome(
+        navigate = {},
+        wakeTime = Pair(
+            LocalTime.of(10, 30),
+            AlarmType.SYSTEM_ALARM
+        ),
+        nextAlarm = LocalTime.of(7, 30),
+        timeManager = TimeManager(),
+        null
+    )
 }

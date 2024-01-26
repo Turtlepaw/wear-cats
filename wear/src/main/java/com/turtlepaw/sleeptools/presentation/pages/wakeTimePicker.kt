@@ -1,12 +1,14 @@
 package com.turtlepaw.sleeptools.presentation.pages
 
-import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.wear.compose.material.Colors
 import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.composables.TimePickerWith12HourClock
-import com.turtlepaw.sleeptools.utils.AlarmType
+import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
+import com.turtlepaw.sleeptools.utils.Settings
 import java.time.LocalTime
 
 @Composable
@@ -15,12 +17,7 @@ fun WakeTimePicker(
     userWakeTime: LocalTime,
     setWakeTime: (value: LocalTime) -> Unit
 ){
-    MaterialTheme(
-        colors = Colors(
-            primary = Color(0xFFE4C6FF),
-            secondary = Color(0xFFE4C6FF)
-        )
-    ) {
+    SleepTheme {
         TimePickerWith12HourClock(
             time = userWakeTime,
             onTimeConfirm = { time ->
@@ -29,4 +26,14 @@ fun WakeTimePicker(
             }
         )
     }
+}
+
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
+@Composable
+fun WakeTimePickerPreview() {
+    WakeTimePicker(
+        closePicker = {},
+        userWakeTime = Settings.WAKE_TIME.getDefaultAsLocalTime(),
+        setWakeTime = {}
+    )
 }

@@ -11,6 +11,7 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -82,6 +83,7 @@ import com.turtlepaw.sleeptools.presentation.pages.WearSettings
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
 import com.turtlepaw.sleeptools.utils.AlarmType
 import com.turtlepaw.sleeptools.utils.AlarmsManager
+import com.turtlepaw.sleeptools.utils.BedtimeModeManager
 import com.turtlepaw.sleeptools.utils.Settings
 import com.turtlepaw.sleeptools.utils.TimeManager
 import kotlinx.coroutines.delay
@@ -132,6 +134,10 @@ fun WearPages(sharedPreferences: SharedPreferences, context: Context){
         var useAlerts by remember { mutableStateOf(useAlertsBool) }
         // Fetches the next alarm from android's alarm manager
         val nextAlarm = alarmManager.fetchAlarms(context);
+        // Uses Settings.Globals to get bedtime mode
+        val bedtimeModeManager = BedtimeModeManager()
+        val isBedtimeModeEnabled = bedtimeModeManager.isBedtimeModeEnabled(context, sharedPreferences)
+        val lastBedtime = bedtimeModeManager.getLastBedtime(sharedPreferences)
         // Parses the wake time and decides if it should use
         // user defined or system defined
         var wakeTime = timeManager.getWakeTime(
@@ -140,7 +146,7 @@ fun WearPages(sharedPreferences: SharedPreferences, context: Context){
             wakeTimeString,
             Settings.WAKE_TIME.getDefaultAsLocalTime()
         );
-        val userWakeTime = timeManager.parseTime(wakeTimeString, Settings.WAKE_TIME.getDefaultAsLocalTime());
+        var userWakeTime = timeManager.parseTime(wakeTimeString, Settings.WAKE_TIME.getDefaultAsLocalTime());
 
         SwipeDismissableNavHost(
             navController = navController,
@@ -153,7 +159,8 @@ fun WearPages(sharedPreferences: SharedPreferences, context: Context){
                     },
                     wakeTime,
                     nextAlarm = nextAlarm ?: wakeTime.first,
-                    timeManager
+                    timeManager,
+                    lastBedtime
                 )
             }
             composable(Routes.SETTINGS.getRoute()) {
@@ -194,6 +201,7 @@ fun WearPages(sharedPreferences: SharedPreferences, context: Context){
                         if(wakeTime.second === AlarmType.USER_DEFINED)
                             wakeTime = Pair(value, AlarmType.USER_DEFINED);
 
+                        userWakeTime = value
                         val editor = sharedPreferences.edit()
                         editor.putString("wake_time", value.toString())
                         editor.apply()
@@ -204,7 +212,7 @@ fun WearPages(sharedPreferences: SharedPreferences, context: Context){
     }
 }
 
-@Preview(device = WearDevices.LARGE_ROUND, showSystemUi = true)
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @Composable
 fun DefaultPreview() {
     WearHome(
@@ -214,11 +222,12 @@ fun DefaultPreview() {
             AlarmType.SYSTEM_ALARM
         ),
         nextAlarm = LocalTime.of(7, 30),
-        timeManager = TimeManager()
+        timeManager = TimeManager(),
+        null
     )
 }
 
-@Preview(device = WearDevices.LARGE_ROUND, showSystemUi = true)
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @Composable
 fun SettingsPreview() {
     WearSettings(

@@ -27,7 +27,7 @@ class TimeManager {
         val minutes = duration.minusHours(hours).toMinutes() + 1
         return if(minutes.toString() == "60")
             TimeDifference(hours + 1, 0)
-        else TimeDifference(hours, minutes);
+        else TimeDifference(hours, minutes)
     }
 
     fun parseTime(time: String?, fallback: LocalTime?): LocalTime {

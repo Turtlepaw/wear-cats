@@ -17,7 +17,8 @@ fun SleepTheme(
         content = content,
         colors = Colors(
             primary = Color(0xFFE4C6FF),
-            secondary = Color(0xFFE4C6FF)
+            secondary = Color(0xFFE4C6FF),
+            background = Color.Black
         )
     )
 }

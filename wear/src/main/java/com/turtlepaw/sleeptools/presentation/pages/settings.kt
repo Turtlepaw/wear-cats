@@ -1,5 +1,6 @@
 package com.turtlepaw.sleeptools.presentation.pages
 
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
@@ -34,12 +36,14 @@ import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.ToggleChip
 import androidx.wear.compose.material.ToggleChipDefaults
 import androidx.wear.compose.material.scrollAway
+import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.sleeptools.R
 import com.turtlepaw.sleeptools.presentation.components.ItemsListWithModifier
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
 import com.turtlepaw.sleeptools.utils.AlarmType
+import com.turtlepaw.sleeptools.utils.Settings
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -114,7 +118,7 @@ fun WearSettings(
                                 .padding(bottom = 8.dp)
                         )
                         Text(
-                            text = "Wake Time: ${userWakeTime.format(formatter)}",
+                            text = "Wake Up ${userWakeTime.format(formatter)}",
                             color = Color.Black
                         )
                     }
@@ -133,7 +137,7 @@ fun WearSettings(
                             setAlarm(isEnabled)
                         },
                         label = {
-                            Text("Use Alarm", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("Alarm", maxLines = 1, overflow = TextOverflow.Ellipsis)
                         },
                         appIcon = {
                             Icon(
@@ -173,7 +177,7 @@ fun WearSettings(
                             setAlerts(isEnabled)
                         },
                         label = {
-                            Text("Notifications", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("Alerts", maxLines = 1, overflow = TextOverflow.Ellipsis)
                         },
                         appIcon = {
                             Icon(
@@ -197,7 +201,7 @@ fun WearSettings(
                                 )
                             )
                         },
-                        enabled = true,
+                        enabled = false,
                         colors = ToggleChipDefaults.toggleChipColors(
                             checkedEndBackgroundColor = Color(0x80E4C6FF)
                         )
@@ -206,4 +210,22 @@ fun WearSettings(
             }
         }
     }
+}
+
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
+@Composable
+fun SettingsPreview() {
+    WearSettings(
+        navigate = {},
+        openWakeTimePicker = {},
+        wakeTime = Pair(
+            Settings.WAKE_TIME.getDefaultAsLocalTime(),
+            AlarmType.SYSTEM_ALARM
+        ),
+        userWakeTime = Settings.WAKE_TIME.getDefaultAsLocalTime(),
+        setAlarm = {},
+        useAlarm = Settings.ALARM.getDefaultAsBoolean(),
+        setAlerts = {},
+        alerts = Settings.ALERTS.getDefaultAsBoolean()
+    )
 }
