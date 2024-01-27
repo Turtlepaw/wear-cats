@@ -1,6 +1,7 @@
 [versions]
 agp = "8.3.0-alpha13"
 composeNavigation = "1.2.1"
+datastorePreferences = "1.0.0"
 horologistComposeLayout = "0.5.10"
 kotlin = "1.9.0"
 coreKtx = "1.12.0"
@@ -8,6 +9,7 @@ junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
 appcompat = "1.6.1"
+lifecycleViewmodelCompose = "2.7.0"
 playServicesPal = "20.2.0"
 playServicesWearable = "18.1.0"
 material = "1.11.0"
@@ -22,11 +24,15 @@ tilesMaterial = "1.2.0"
 horologistComposeTools = "0.4.8"
 horologistTiles = "0.4.8"
 watchfaceComplicationsDataSourceKtx = "1.2.0"
+wear = "1.3.0"
 wearToolingPreview = "1.0.0"
 
 [libraries]
 androidx-compose-navigation = { module = "androidx.wear.compose:compose-navigation", version.ref = "composeNavigation" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
+androidx-wear = { module = "androidx.wear:wear", version.ref = "wear" }
 horologist-composables = { module = "com.google.android.horologist:horologist-composables", version.ref = "horologistComposeLayout" }
 horologist-compose-layout = { module = "com.google.android.horologist:horologist-compose-layout", version.ref = "horologistComposeLayout" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

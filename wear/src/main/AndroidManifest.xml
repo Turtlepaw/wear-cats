@@ -15,6 +15,10 @@
         android:theme="@android:style/Theme.DeviceDefault">
         <meta-data android:name="com.google.android.wearable.standalone" android:value="true"/>
         <service
+            android:name=".presentation.BedtimeModeService"
+            android:enabled="true"
+            android:exported="false" />
+        <service
             android:name=".complication.MainComplicationService"
             android:exported="true"
             android:label="@string/complication_label"

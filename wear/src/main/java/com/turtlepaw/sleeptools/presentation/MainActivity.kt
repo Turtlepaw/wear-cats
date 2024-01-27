@@ -6,7 +6,10 @@
 
 package com.turtlepaw.sleeptools.presentation
 
+import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
@@ -78,15 +81,18 @@ import com.google.android.horologist.composables.TimePickerWith12HourClock
 import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.sleeptools.R
 import com.turtlepaw.sleeptools.presentation.pages.WakeTimePicker
+import com.turtlepaw.sleeptools.presentation.pages.WearHistory
 import com.turtlepaw.sleeptools.presentation.pages.WearHome
 import com.turtlepaw.sleeptools.presentation.pages.WearSettings
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
 import com.turtlepaw.sleeptools.utils.AlarmType
 import com.turtlepaw.sleeptools.utils.AlarmsManager
 import com.turtlepaw.sleeptools.utils.BedtimeModeManager
+import com.turtlepaw.sleeptools.utils.BedtimeViewModel
 import com.turtlepaw.sleeptools.utils.Settings
 import com.turtlepaw.sleeptools.utils.TimeManager
 import kotlinx.coroutines.delay
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -94,7 +100,8 @@ import java.util.Locale
 enum class Routes(private val route: String) {
     HOME("/home"),
     SETTINGS("/settings"),
-    TIME_PICKER("/time-picker");
+    TIME_PICKER("/time-picker"),
+    HISTORY("/history");
 
     fun getRoute(): String {
         return route
@@ -102,6 +109,8 @@ enum class Routes(private val route: String) {
 }
 
 class MainActivity : ComponentActivity() {
+    private lateinit var bedtimeViewModel: BedtimeViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
@@ -109,15 +118,26 @@ class MainActivity : ComponentActivity() {
 
         setTheme(android.R.style.Theme_DeviceDefault)
         val sharedPreferences = getSharedPreferences("SleepTurtlepawSettings", Context.MODE_PRIVATE)
+        startService(Intent(this, BedtimeModeService::class.java))
+
+        // Initialize your BedtimeViewModel here
+        bedtimeViewModel = BedtimeViewModel(this)
 
         setContent {
-            WearPages(sharedPreferences, this)
+            WearPages(sharedPreferences, bedtimeViewModel, this)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("MAIN_ACTIVITY", "Refreshing database...")
+        bedtimeViewModel = BedtimeViewModel(this)
+        Log.d("MAIN_ACTIVITY", "Databased refreshed")
     }
 }
 
 @Composable
-fun WearPages(sharedPreferences: SharedPreferences, context: Context){
+fun WearPages(sharedPreferences: SharedPreferences, bedtimeViewModel: BedtimeViewModel, context: Context){
     SleepTheme {
         // Creates a navigation controller for our pages
         val navController = rememberSwipeDismissableNavController()
@@ -136,8 +156,11 @@ fun WearPages(sharedPreferences: SharedPreferences, context: Context){
         val nextAlarm = alarmManager.fetchAlarms(context);
         // Uses Settings.Globals to get bedtime mode
         val bedtimeModeManager = BedtimeModeManager()
-        val isBedtimeModeEnabled = bedtimeModeManager.isBedtimeModeEnabled(context, sharedPreferences)
-        val lastBedtime = bedtimeModeManager.getLastBedtime(sharedPreferences)
+        var lastBedtime by remember { mutableStateOf<LocalDateTime?>(null) }
+        LaunchedEffect(key1 = Unit) {
+            // Launch a coroutine to perform async operations
+            lastBedtime = bedtimeModeManager.getLastBedtime(bedtimeViewModel)
+        }
         // Parses the wake time and decides if it should use
         // user defined or system defined
         var wakeTime = timeManager.getWakeTime(
@@ -207,6 +230,9 @@ fun WearPages(sharedPreferences: SharedPreferences, context: Context){
                         editor.apply()
                     }
                 )
+            }
+            composable(Routes.HISTORY.getRoute()){
+                WearHistory(bedtimeViewModel)
             }
         }
     }

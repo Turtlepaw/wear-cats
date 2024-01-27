@@ -12,8 +12,8 @@ android {
         applicationId = "com.turtlepaw.sleeptools"
         minSdk = 30
         targetSdk = 33
-        versionCode = 5
-        versionName = "1.0"
+        versionCode = 8
+        versionName = "1.1"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -68,6 +68,9 @@ dependencies {
     implementation(libs.horologist.composables)
     implementation(libs.play.services.pal)
     implementation(libs.androidx.wear.tooling.preview)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.wear)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)

@@ -4,12 +4,15 @@ import android.os.Handler
 import android.os.Looper
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,6 +37,7 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Text
@@ -49,6 +53,7 @@ import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
 import com.turtlepaw.sleeptools.utils.AlarmType
 import com.turtlepaw.sleeptools.utils.TimeManager
 import kotlinx.coroutines.delay
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -59,12 +64,13 @@ fun WearHome(
     wakeTime: Pair<LocalTime, AlarmType>,
     nextAlarm: LocalTime,
     timeManager: TimeManager,
-    lastBedtime: LocalTime?
+    lastBedtime: LocalDateTime?
 ) {
     SleepTheme {
         val focusRequester = rememberActiveFocusRequester()
         val scalingLazyListState = rememberScalingLazyListState()
         val formatter = DateTimeFormatter.ofPattern("hh:mm")
+        val formatterWithDetails = DateTimeFormatter.ofPattern("hh:mm a")
         var timeDifference by remember {
             mutableStateOf(timeManager.calculateTimeDifference(wakeTime.first))
         }
@@ -166,7 +172,7 @@ fun WearHome(
                     }
                     item {
                         Text(
-                            text = "You should go to bed at ${formatter.format(lastBedtime)} to be consistent",
+                            text = "You should go to bed at ${formatterWithDetails.format(lastBedtime)} to be consistent",
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(top = 4.dp),
                             //color = Color(0xFF939AA3)
@@ -177,28 +183,50 @@ fun WearHome(
                     Spacer(modifier = Modifier.padding(vertical = 5.dp))
                 }
                 item {
-                    Button(
-                        onClick = {
-                            navigate(Routes.SETTINGS.getRoute())
-                        },
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFFE4C6FF)
-                        )
+                        horizontalArrangement = Arrangement.spacedBy(26.dp, Alignment.CenterHorizontally)
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.sleep),
-                            contentDescription = "sleep",
+                        Button(
+                            onClick = {
+                                navigate(
+                                    Routes.HISTORY.getRoute()
+                                )
+                            },
                             modifier = Modifier
-                                .size(32.dp)
-                                .padding(bottom = 8.dp)
-                        )
-                        Text(
-                            text = "Settings",
-                            color = Color.Black
-                        )
+                                .size(ButtonDefaults.DefaultButtonSize)
+                                //.wrapContentSize(align = Alignment.Center)
+                        ) {
+                            // Icon for history button
+                            Icon(
+                                painter = painterResource(id = R.drawable.history),
+                                contentDescription = "History",
+                                modifier = Modifier
+                                    .padding(2.dp)
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                navigate(
+                                    Routes.SETTINGS.getRoute()
+                                )
+                            },
+                            modifier = Modifier
+                                .size(ButtonDefaults.DefaultButtonSize)
+                                //.wrapContentSize(align = Alignment.Center)
+                        ) {
+                            // Icon for history button
+                            Icon(
+                                painter = painterResource(id = R.drawable.settings),
+                                contentDescription = "Settings",
+                                modifier = Modifier
+                                    .padding(2.dp)
+                            )
+                        }
                     }
+
                 }
                 item {
                     Text(
@@ -209,13 +237,6 @@ fun WearHome(
                             .padding(
                                 top = 10.dp
                             )
-                    )
-                }
-                item {
-                    Spacer(
-                        modifier = Modifier.padding(
-                            bottom = 14.dp
-                        )
                     )
                 }
             }
