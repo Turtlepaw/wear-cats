@@ -10,30 +10,18 @@
       </entry>
       <entry key="wear">
         <State>
-          <runningDeviceTargetSelectedWithDropDown>
-            <Target>
-              <type value="RUNNING_DEVICE_TARGET" />
-              <deviceKey>
-                <Key>
-                  <type value="VIRTUAL_DEVICE_PATH" />
-                  <value value="C:\Users\olivi\.android\avd\Wear_OS.avd" />
-                </Key>
-              </deviceKey>
-            </Target>
-          </runningDeviceTargetSelectedWithDropDown>
           <targetSelectedWithDropDown>
             <Target>
-              <type value="BOOT_WITH_SNAPSHOT_TARGET" />
+              <type value="QUICK_BOOT_TARGET" />
               <deviceKey>
                 <Key>
                   <type value="VIRTUAL_DEVICE_PATH" />
-                  <value value="C:\Users\olivi\.android\avd\Wear_OS.avd" />
+                  <value value="C:\Users\olivi\.android\avd\Pixel_Watch_virtual_.avd" />
                 </Key>
               </deviceKey>
-              <snapshotKey value="C:\Users\olivi\.android\avd\Wear_OS.avd\snapshots\snap_2023-12-28_16-39-27" />
             </Target>
           </targetSelectedWithDropDown>
-          <timeTargetWasSelectedWithDropDown value="2024-01-27T02:53:22.852240500Z" />
+          <timeTargetWasSelectedWithDropDown value="2024-01-28T00:40:11.199393200Z" />
         </State>
       </entry>
     </value>

@@ -186,7 +186,7 @@ fun WearHome(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(26.dp, Alignment.CenterHorizontally)
+                        horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally)
                     ) {
                         Button(
                             onClick = {
@@ -194,6 +194,7 @@ fun WearHome(
                                     Routes.HISTORY.getRoute()
                                 )
                             },
+                            colors = ButtonDefaults.secondaryButtonColors(),
                             modifier = Modifier
                                 .size(ButtonDefaults.DefaultButtonSize)
                                 //.wrapContentSize(align = Alignment.Center)
@@ -202,6 +203,7 @@ fun WearHome(
                             Icon(
                                 painter = painterResource(id = R.drawable.history),
                                 contentDescription = "History",
+                                tint = Color(0xFFE4C6FF),
                                 modifier = Modifier
                                     .padding(2.dp)
                             )
@@ -213,6 +215,7 @@ fun WearHome(
                                     Routes.SETTINGS.getRoute()
                                 )
                             },
+                            colors = ButtonDefaults.secondaryButtonColors(),
                             modifier = Modifier
                                 .size(ButtonDefaults.DefaultButtonSize)
                                 //.wrapContentSize(align = Alignment.Center)
@@ -220,6 +223,7 @@ fun WearHome(
                             // Icon for history button
                             Icon(
                                 painter = painterResource(id = R.drawable.settings),
+                                tint = Color(0xFFE4C6FF),
                                 contentDescription = "Settings",
                                 modifier = Modifier
                                     .padding(2.dp)

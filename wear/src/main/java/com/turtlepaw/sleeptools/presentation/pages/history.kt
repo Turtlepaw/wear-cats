@@ -108,7 +108,7 @@ fun WearHistory(bedtimeViewModel: BedtimeViewModel) {
                     item {
                         Text(text = "Bedtime History")
                     }
-                    items(history.toList()) { time ->
+                    items(history.filterNotNull().toList()) { time ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()

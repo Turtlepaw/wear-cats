@@ -3,10 +3,11 @@ package com.turtlepaw.sleeptools.utils
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-enum class Settings(private val key: String, private val default: Any) {
+enum class Settings(private val key: String, private val default: Any?) {
     WAKE_TIME("wake_time", LocalTime.of(10, 30)),
     ALARM("use_system_alarm", true),
-    ALERTS("use_notifications", false);
+    ALERTS("use_notifications", false),
+    STORAGE_BASE("bedtime_history", null);
 
     fun getKey(): String {
         return key

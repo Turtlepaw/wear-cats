@@ -35,10 +35,9 @@ class BedtimeModeManager {
         }
 
         if(state){
+            Log.d(TAG, "Setting bedtime to $state")
             bedtimeViewModel.save(LocalDateTime.now())
         }
-
-        Log.e(TAG, "Bedtime is currently $state")
 
         return state
     }

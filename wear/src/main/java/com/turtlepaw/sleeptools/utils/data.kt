@@ -4,28 +4,24 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.turtlepaw.sleeptools.utils.BedtimeViewModel.PreferencesKeys.BEDTIME_HISTORY_KEY
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.time.format.DateTimeParseException
 
-private const val USER_PREFERENCES_NAME = "bedtime_key"
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = USER_PREFERENCES_NAME)
-class BedtimeViewModel(private val context: Context) : ViewModel() {
+const val BEDTIME_STORAGE_KEY = "bedtime_key"
+class BedtimeViewModel(private val dataStore: DataStore<Preferences>) : ViewModel() {
     private object PreferencesKeys {
         val BEDTIME_HISTORY_KEY = stringSetPreferencesKey("bedtime_history")
     }
 
     suspend fun save(date: LocalDateTime) {
-        context.dataStore.edit { preferences ->
-            var bedtimeHistory = preferences[BEDTIME_HISTORY_KEY] ?: mutableSetOf()
+        dataStore.edit { preferences ->
+            val bedtimeHistory = (preferences[BEDTIME_HISTORY_KEY] ?: mutableSetOf()).toMutableSet()
             bedtimeHistory += date.toString()
             preferences[BEDTIME_HISTORY_KEY] = bedtimeHistory
         }
@@ -40,15 +36,25 @@ class BedtimeViewModel(private val context: Context) : ViewModel() {
         }
     }
     suspend fun getHistory(): Set<LocalDateTime?> {
-        val preferences = context.dataStore.data.first() // blocking call to get the latest preferences
+        val preferences = dataStore.data.first() // blocking call to get the latest preferences
         return preferences[BEDTIME_HISTORY_KEY]?.map { date ->
             this.parseDate(date)
         }?.toSet() ?: emptySet()
     }
 
     suspend fun getLatest(): LocalDateTime? {
-        val preferences = context.dataStore.data.first() // blocking call to get the latest preferences
+        val preferences = dataStore.data.first() // blocking call to get the latest preferences
         val bedtimeHistory = preferences[BEDTIME_HISTORY_KEY] ?: emptySet()
         return bedtimeHistory.lastOrNull()?.let { parseDate(it) }
+    }
+}
+
+class BedtimeViewModelFactory(private val dataStore: DataStore<Preferences>) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(BedtimeViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return BedtimeViewModel(dataStore) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

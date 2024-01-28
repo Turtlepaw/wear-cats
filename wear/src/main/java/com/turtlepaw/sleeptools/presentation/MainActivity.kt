@@ -6,96 +6,44 @@
 
 package com.turtlepaw.sleeptools.presentation
 
-import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
-import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
-import androidx.wear.compose.foundation.lazy.ScalingLazyColumnDefaults.scalingParams
-import androidx.wear.compose.foundation.lazy.ScalingLazyColumnDefaults.snapFlingBehavior
-import androidx.wear.compose.foundation.lazy.ScalingLazyListScope
-import androidx.wear.compose.foundation.lazy.ScalingLazyListState
-import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.wear.compose.foundation.rememberActiveFocusRequester
-import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.ButtonDefaults
-import androidx.wear.compose.material.Colors
-import androidx.wear.compose.material.Icon
-import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.MaterialTheme.colors
-import androidx.wear.compose.material.PositionIndicator
-import androidx.wear.compose.material.Switch
-import androidx.wear.compose.material.SwitchDefaults
-import androidx.wear.compose.material.Text
-import androidx.wear.compose.material.TimeText
-import androidx.wear.compose.material.ToggleChip
-import androidx.wear.compose.material.ToggleChipDefaults
-import androidx.wear.compose.material.scrollAway
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.ViewModelProvider
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import androidx.wear.tooling.preview.devices.WearDevices
-import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.composables.TimePickerWith12HourClock
-import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
-import com.turtlepaw.sleeptools.R
 import com.turtlepaw.sleeptools.presentation.pages.WakeTimePicker
 import com.turtlepaw.sleeptools.presentation.pages.WearHistory
 import com.turtlepaw.sleeptools.presentation.pages.WearHome
 import com.turtlepaw.sleeptools.presentation.pages.WearSettings
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
+import com.turtlepaw.sleeptools.services.BedtimeModeService
 import com.turtlepaw.sleeptools.utils.AlarmType
 import com.turtlepaw.sleeptools.utils.AlarmsManager
 import com.turtlepaw.sleeptools.utils.BedtimeModeManager
 import com.turtlepaw.sleeptools.utils.BedtimeViewModel
+import com.turtlepaw.sleeptools.utils.BedtimeViewModelFactory
 import com.turtlepaw.sleeptools.utils.Settings
 import com.turtlepaw.sleeptools.utils.TimeManager
-import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 enum class Routes(private val route: String) {
     HOME("/home"),
@@ -108,7 +56,11 @@ enum class Routes(private val route: String) {
     }
 }
 
+// At the top level of your kotlin file:
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = Settings.STORAGE_BASE.getKey())
+
 class MainActivity : ComponentActivity() {
+    private lateinit var bedtimeViewModelFactory: BedtimeViewModelFactory
     private lateinit var bedtimeViewModel: BedtimeViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -120,8 +72,11 @@ class MainActivity : ComponentActivity() {
         val sharedPreferences = getSharedPreferences("SleepTurtlepawSettings", Context.MODE_PRIVATE)
         startService(Intent(this, BedtimeModeService::class.java))
 
-        // Initialize your BedtimeViewModel here
-        bedtimeViewModel = BedtimeViewModel(this)
+        // Initialize your BedtimeViewModelFactory here
+        bedtimeViewModelFactory = BedtimeViewModelFactory(dataStore)
+
+        // Use the factory to create the BedtimeViewModel
+        bedtimeViewModel = ViewModelProvider(this, bedtimeViewModelFactory)[BedtimeViewModel::class.java]
 
         setContent {
             WearPages(sharedPreferences, bedtimeViewModel, this)
@@ -131,8 +86,9 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         Log.d("MAIN_ACTIVITY", "Refreshing database...")
-        bedtimeViewModel = BedtimeViewModel(this)
-        Log.d("MAIN_ACTIVITY", "Databased refreshed")
+        // You might not need to recreate the ViewModel here, as you've already created it in onCreate
+        // bedtimeViewModel = BedtimeViewModel(this)
+        Log.d("MAIN_ACTIVITY", "Database refreshed")
     }
 }
 

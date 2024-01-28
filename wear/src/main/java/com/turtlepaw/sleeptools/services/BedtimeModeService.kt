@@ -1,10 +1,11 @@
-package com.turtlepaw.sleeptools.presentation
+package com.turtlepaw.sleeptools.services
 
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.IBinder
+import com.turtlepaw.sleeptools.services.BedtimeModeListener
 
 class BedtimeModeService : Service() {
     private val bedtimeModeListener = BedtimeModeListener()
