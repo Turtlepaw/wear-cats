@@ -12,7 +12,7 @@ android {
         applicationId = "com.turtlepaw.sleeptools"
         minSdk = 30
         targetSdk = 33
-        versionCode = 8
+        versionCode = 9
         versionName = "1.1"
         vectorDrawables {
             useSupportLibrary = true
