@@ -1,5 +1,6 @@
 package com.turtlepaw.sleeptools.utils
 
+import android.content.Context
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -7,7 +8,8 @@ enum class Settings(private val key: String, private val default: Any?) {
     WAKE_TIME("wake_time", LocalTime.of(10, 30)),
     ALARM("use_system_alarm", true),
     ALERTS("use_notifications", false),
-    STORAGE_BASE("bedtime_history", null);
+    HISTORY_STORAGE_BASE("bedtime_history", null),
+    SHARED_PREFERENCES("SleepToolsSettings", Context.MODE_PRIVATE);
 
     fun getKey(): String {
         return key
@@ -60,5 +62,18 @@ enum class Settings(private val key: String, private val default: Any?) {
                 LocalTime.of(10, 30)
             }
         }
+    }
+}
+
+enum class SettingsBasics(private val key: String, private val mode: Int?) {
+    HISTORY_STORAGE_BASE("bedtime_history", null),
+    SHARED_PREFERENCES("SleepToolsSettings", Context.MODE_PRIVATE);
+
+    fun getKey(): String {
+        return key
+    }
+
+    fun getMode(): Int {
+        return mode ?: Context.MODE_PRIVATE
     }
 }

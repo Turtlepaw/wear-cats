@@ -3,8 +3,10 @@ package com.turtlepaw.sleeptools.utils
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import androidx.compose.ui.graphics.Color
 import java.time.Duration
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
 data class TimeDifference(val hours: Long, val minutes: Long)
@@ -13,7 +15,26 @@ enum class AlarmType {
     USER_DEFINED
 }
 
+enum class SleepQuality(private val title: String, private val color: Int) {
+    GOOD("Good", android.graphics.Color.parseColor("#71b219")),
+    MEDIUM("Fair", android.graphics.Color.parseColor("#efa300")),
+    POOR("Poor", android.graphics.Color.parseColor("#efa300"));
+
+    fun getTitle(): String {
+        return title
+    }
+
+    fun getColor(): Int {
+        return color
+    }
+}
+
 class TimeManager {
+    fun calculateSleepQuality(sleepTime: TimeDifference): SleepQuality {
+        return if(sleepTime.hours >= 8) SleepQuality.GOOD
+        else if(sleepTime.hours in 7..7) SleepQuality.MEDIUM
+        else SleepQuality.POOR
+    }
     fun calculateTimeDifference(targetTime: LocalTime, now: LocalTime = LocalTime.now()): TimeDifference {
         val currentDateTime = LocalTime.now()
         val duration = if (targetTime.isBefore(now)) {
@@ -38,6 +59,9 @@ class TimeManager {
         }
     }
 
+    /**
+     * @return Pair of wake time and type of wake time (`USER_DEFINED` or `SYSTEM_ALARM`)
+     */
     fun getWakeTime(
         useAlarm: Boolean,
         nextAlarm: LocalTime?,

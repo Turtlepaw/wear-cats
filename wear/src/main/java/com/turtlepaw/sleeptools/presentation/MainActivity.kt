@@ -41,6 +41,7 @@ import com.turtlepaw.sleeptools.utils.BedtimeModeManager
 import com.turtlepaw.sleeptools.utils.BedtimeViewModel
 import com.turtlepaw.sleeptools.utils.BedtimeViewModelFactory
 import com.turtlepaw.sleeptools.utils.Settings
+import com.turtlepaw.sleeptools.utils.SettingsBasics
 import com.turtlepaw.sleeptools.utils.TimeManager
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -57,7 +58,7 @@ enum class Routes(private val route: String) {
 }
 
 // At the top level of your kotlin file:
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = Settings.STORAGE_BASE.getKey())
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = SettingsBasics.HISTORY_STORAGE_BASE.getKey())
 
 class MainActivity : ComponentActivity() {
     private lateinit var bedtimeViewModelFactory: BedtimeViewModelFactory
@@ -69,8 +70,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setTheme(android.R.style.Theme_DeviceDefault)
-        val sharedPreferences = getSharedPreferences("SleepTurtlepawSettings", Context.MODE_PRIVATE)
-        startService(Intent(this, BedtimeModeService::class.java))
+        // Start listening for bedtime mode
+        startService(
+            Intent(
+                this,
+                BedtimeModeService::class.java
+            )
+        )
+        val sharedPreferences = getSharedPreferences(
+            SettingsBasics.SHARED_PREFERENCES.getKey(),
+            SettingsBasics.SHARED_PREFERENCES.getMode()
+        )
 
         // Initialize your BedtimeViewModelFactory here
         bedtimeViewModelFactory = BedtimeViewModelFactory(dataStore)

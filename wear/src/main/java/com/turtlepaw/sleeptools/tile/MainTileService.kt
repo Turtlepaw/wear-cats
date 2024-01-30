@@ -1,25 +1,22 @@
 package com.turtlepaw.sleeptools.tile
 
-import android.app.TaskStackBuilder
 import android.content.Context
-import android.content.Intent
-import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.argb
-import androidx.wear.protolayout.DimensionBuilders.dp
+import androidx.wear.protolayout.DimensionBuilders.SpProp
 import androidx.wear.protolayout.LayoutElementBuilders
-import androidx.wear.protolayout.LayoutElementBuilders.LayoutElement
-import androidx.wear.protolayout.ModifiersBuilders
-import androidx.wear.protolayout.ModifiersBuilders.Padding
+import androidx.wear.protolayout.LayoutElementBuilders.SpanText
+import androidx.wear.protolayout.LayoutElementBuilders.Spannable
 import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
+import androidx.wear.protolayout.material.CircularProgressIndicator
+import androidx.wear.protolayout.material.ProgressIndicatorColors
 import androidx.wear.protolayout.material.Text
 import androidx.wear.protolayout.material.Typography
-import androidx.wear.protolayout.material.layouts.PrimaryLayout
+import androidx.wear.protolayout.material.layouts.EdgeContentLayout
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tooling.preview.devices.WearDevices
@@ -28,23 +25,24 @@ import com.google.android.horologist.compose.tools.LayoutRootPreview
 import com.google.android.horologist.compose.tools.buildDeviceParameters
 import com.google.android.horologist.tiles.SuspendingTileService
 import com.turtlepaw.sleeptools.R
+import com.turtlepaw.sleeptools.utils.AlarmsManager
+import com.turtlepaw.sleeptools.utils.Settings
+import com.turtlepaw.sleeptools.utils.SettingsBasics
+import com.turtlepaw.sleeptools.utils.SleepQuality
 import com.turtlepaw.sleeptools.utils.TimeDifference
 import com.turtlepaw.sleeptools.utils.TimeManager
 import java.time.LocalTime
-import java.time.format.DateTimeParseException
 
 
 private const val RESOURCES_VERSION = "1"
+private const val DEFAULT_GOAL = 8 // 8hrs
+private const val LAUNCH_APP_ID = "LAUNCH_APP"
 
 /**
  * Skeleton for a tile with no images.
  */
 @OptIn(ExperimentalHorologistApi::class)
 class MainTileService : SuspendingTileService() {
-    companion object {
-        const val KEY_WAKE_TIME = "wake_time"
-    }
-
     override suspend fun resourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest
     ): ResourceBuilders.Resources {
@@ -65,32 +63,41 @@ class MainTileService : SuspendingTileService() {
         requestParams: RequestBuilders.TileRequest
     ): TileBuilders.Tile {
         val lastClickableId = requestParams.currentState.lastClickableId
-        if (lastClickableId == "open-app-main") {
-            Log.d("Open App", "Opening main activity...")
-            TaskStackBuilder.create(this)
-                .addNextIntentWithParentStack(
-                    Intent(this, MainTileService::class.java)
-                )
-                .startActivities()
+        if (lastClickableId === LAUNCH_APP_ID) {
+            Log.d("Tile", "Launching main activity...")
+            startActivity(packageManager.getLaunchIntentForPackage(packageName))
         }
-
-        val timeManager = TimeManager();
-        val sharedPreferences = getSharedPreferences("SleepTurtlepawSettings", Context.MODE_PRIVATE)
-        val wakeTimeStr = sharedPreferences.getString("wake_time", "10:00")
-        val wakeTime = try {
-            LocalTime.parse(wakeTimeStr)
-        } catch (e: DateTimeParseException) {
-            // Handle parsing error, use a default value, or show an error message
-            LocalTime.NOON
-        }
-        val sleepTime = timeManager.calculateTimeDifference(wakeTime)
-
-//        getUpdater(this)
-//            .requestUpdate(MainTileService::class.java);
+        
+        val sharedPreferences = getSharedPreferences(
+            SettingsBasics.SHARED_PREFERENCES.getKey(),
+            SettingsBasics.SHARED_PREFERENCES.getMode()
+        )
+        // Initialize managers
+        val timeManager = TimeManager()
+        val alarmManager = AlarmsManager()
+        // Get preferences
+        val useAlarm = sharedPreferences.getBoolean(Settings.ALARM.getKey(), Settings.ALARM.getDefaultAsBoolean())
+        val wakeTimeString = sharedPreferences.getString(Settings.WAKE_TIME.getKey(), Settings.WAKE_TIME.getDefault())
+        // Get next alarm
+        val nextAlarm = alarmManager.fetchAlarms(this);
+        // Calculate wake time
+        // between alarm and wake time
+        val wakeTime = timeManager.getWakeTime(
+            useAlarm,
+            nextAlarm,
+            wakeTimeString,
+            Settings.WAKE_TIME.getDefaultAsLocalTime()
+        );
+        // Calculate time difference
+        val sleepTime = timeManager.calculateTimeDifference(wakeTime.first)
+        // Calculate sleep quality from time diff
+        val sleepQuality = timeManager.calculateSleepQuality(sleepTime)
 
         val singleTileTimeline = TimelineBuilders.Timeline.Builder().addTimelineEntry(
             TimelineBuilders.TimelineEntry.Builder().setLayout(
-                LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(this, sleepTime)).build()
+                LayoutElementBuilders.Layout.Builder().setRoot(
+                    tileLayout(this, sleepTime, sleepQuality).build()
+                ).build()
             ).build()
         ).build()
 
@@ -98,78 +105,91 @@ class MainTileService : SuspendingTileService() {
         return TileBuilders.Tile.Builder()
             .setResourcesVersion(RESOURCES_VERSION)
             .setTileTimeline(singleTileTimeline)
-            .setFreshnessIntervalMillis(60000 * 5)
+            .setFreshnessIntervalMillis(
+                // Every 5 minutes (60000 = 1m)
+                60000 * 5
+            )
             .build()
     }
 }
 
-private fun tileLayout(context: Context, sleepTime: TimeDifference): LayoutElementBuilders.LayoutElement {
-    return PrimaryLayout.Builder(buildDeviceParameters(context.resources))
+private fun tileLayout(
+    context: Context,
+    sleepTime: TimeDifference,
+    sleepQuality: SleepQuality
+): EdgeContentLayout.Builder {
+    val deviceParameters = buildDeviceParameters(context.resources)
+    return EdgeContentLayout.Builder(deviceParameters)
+        .setEdgeContent(
+            CircularProgressIndicator.Builder()
+                .setProgress(sleepTime.hours.toFloat() / DEFAULT_GOAL)
+                .setStartAngle(-165f)
+                .setEndAngle(165f)
+                .setCircularProgressIndicatorColors(
+                    ProgressIndicatorColors(
+                        TileColors.PrimaryColor,
+                        TileColors.TrackColor
+                    )
+                )
+                .build()
+        )
+        .setPrimaryLabelTextContent(
+            Text.Builder(context, "Sleep")
+                .setTypography(6.toInt())
+                .setColor(argb(TileColors.LightText))
+                .build()
+        )
+        .setSecondaryLabelTextContent(
+            Text.Builder(context, sleepQuality.getTitle())
+                .setTypography(Typography.TYPOGRAPHY_CAPTION1)
+                .setColor(argb(TileColors.White))
+                .build()
+        )
         .setContent(
-            myLayout(context, sleepTime)
-        ).build()
-}
-
-private fun myLayout(context: Context, sleepTime: TimeDifference): LayoutElement =
-    LayoutElementBuilders.Column.Builder()
-        .setModifiers(
-            ModifiersBuilders.Modifiers.Builder()
-            .setClickable(
-                ModifiersBuilders.Clickable.Builder()
-                .setId("open-app-main")
-                .setOnClick(ActionBuilders.LoadAction.Builder().build())
-                .build()
-            ).build()
-        )
-        .addContent(
-            Text.Builder(context, "Sleep Prediction")
-                .setColor(argb(0xFFBDC7C5.toInt()))
-                .setTypography(Typography.TYPOGRAPHY_BODY1)
-                .build()
-        )
-        .addContent(
-            Text.Builder(context, "${sleepTime.hours}h ${sleepTime.minutes}m")
-                .setColor(argb(0xFFE4C6FF.toInt()))
-                .setTypography(Typography.TYPOGRAPHY_DISPLAY3)
-                .build()
-        )
-        .addContent(
-            LayoutElementBuilders.Image.Builder()
-                .setModifiers(
-                    ModifiersBuilders.Modifiers.Builder()
-                        .setPadding(
-                            Padding.Builder()
-                                .setTop(dp(10f))
-                                .build()
+            Spannable.Builder()
+                .addSpan(
+                    SpanText.Builder()
+                        .setText(sleepTime.hours.toString())
+                        .setFontStyle(
+                            FontStyle.PrimaryFontSize.getBuilder()
                         )
                         .build()
                 )
-                .setWidth(dp(40f))
-                .setHeight(dp(40f))
-                .setResourceId("sleep_icon")
+                .addSpan(
+                    SpanText.Builder()
+                        .setText("h")
+                        .setFontStyle(
+                            FontStyle.SecondaryFontSize.getBuilder()
+                        )
+                        .build()
+                )
+                .addSpan(
+                    SpanText.Builder()
+                        .setText(" ")
+                        .build()
+                )
+                .addSpan(
+                    SpanText.Builder()
+                        .setText(sleepTime.minutes.toString())
+                        .setFontStyle(
+                            FontStyle.PrimaryFontSize.getBuilder()
+                        )
+                        .build()
+                )
+                .addSpan(
+                    SpanText.Builder()
+                        .setText("m")
+                        .setFontStyle(
+                            FontStyle.SecondaryFontSize.getBuilder()
+                        )
+                        .build()
+                )
                 .build()
         )
-//        .addContent(
-//            Chip.Builder(
-//                context,
-//                Clickable.Builder()
-//                    .setId("open-app")
-//                    .setOnClick(ActionBuilders.launchAction(
-//                        ComponentName("com.turtlepaw.sleeptools", "MainActivity")
-//                    )).build(),
-//                buildDeviceParameters(reso)
-//            )
-//                .setContentDescription("More")
-//                .build()
-//        )
-        .build()
-
-fun PreferencesHandler(sharedPreferences: SharedPreferences, key: String, default: String = "unknown"): String {
-    return sharedPreferences.getString(key, default) ?: default
 }
 
 @Preview(
-    device = WearDevices.LARGE_ROUND,
+    device = WearDevices.SMALL_ROUND,
     showSystemUi = true,
     backgroundColor = 0xff000000,
     showBackground = true
@@ -177,5 +197,12 @@ fun PreferencesHandler(sharedPreferences: SharedPreferences, key: String, defaul
 @Composable
 fun TilePreview() {
     val timeManager = TimeManager()
-    LayoutRootPreview(root = tileLayout(LocalContext.current, timeManager.calculateTimeDifference(LocalTime.NOON)))
+    val timeDifference = timeManager.calculateTimeDifference(LocalTime.MIDNIGHT);
+    val sleepQuality = timeManager.calculateSleepQuality(timeDifference)
+
+    LayoutRootPreview(root = tileLayout(
+        LocalContext.current,
+        timeDifference,
+        sleepQuality
+    ).build())
 }
