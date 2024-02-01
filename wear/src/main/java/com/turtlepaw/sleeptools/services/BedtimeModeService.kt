@@ -6,8 +6,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.IBinder
 import android.util.Log
+import androidx.annotation.Keep
 import com.turtlepaw.sleeptools.services.BedtimeModeListener
 
+@Keep
 class BedtimeModeService : Service() {
     companion object {
         private const val TAG = "BedtimeModeService"

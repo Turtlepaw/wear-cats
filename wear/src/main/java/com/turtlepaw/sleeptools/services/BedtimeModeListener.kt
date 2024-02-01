@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.annotation.Keep
 import com.turtlepaw.sleeptools.presentation.dataStore
 import com.turtlepaw.sleeptools.utils.BedtimeModeManager
 import com.turtlepaw.sleeptools.utils.BedtimeViewModel
@@ -11,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@Keep
 class BedtimeModeListener: BroadcastReceiver() {
     companion object {
         private const val TAG = "BEDTIME_MODE_LISTENER"

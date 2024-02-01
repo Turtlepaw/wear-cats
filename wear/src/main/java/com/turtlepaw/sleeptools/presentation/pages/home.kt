@@ -77,6 +77,10 @@ fun WearHome(
 
         // Track the current minute
         var currentMinute by remember { mutableIntStateOf(LocalTime.now().minute) }
+        // Track the sleep quality
+        var sleepQuality by remember {
+            mutableStateOf(timeManager.calculateSleepQuality(timeDifference))
+        }
 
         // Use LaunchedEffect to launch a coroutine when the composable is first displayed
         LaunchedEffect(wakeTime) {
@@ -92,6 +96,7 @@ fun WearHome(
                 // Re-compose the composable
                 handler.post {
                     timeDifference = timeManager.calculateTimeDifference(nextAlarm)
+                    sleepQuality = timeManager.calculateSleepQuality(timeDifference)
                     // we used to use wakeTime but now we use
                     // nextAlarm
                     // You can trigger a re-composition here, for example by updating some state
@@ -157,7 +162,7 @@ fun WearHome(
                 }
                 item {
                     Text(
-                        text = "${nextAlarm.format(formatter)} wake up${if(wakeTime.second === AlarmType.SYSTEM_ALARM) " (alarm)" else ""}",
+                        text = "${sleepQuality.getTitle()} • ${nextAlarm.format(formatter)} wake up${if(wakeTime.second === AlarmType.SYSTEM_ALARM) " (alarm)" else ""}",
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }

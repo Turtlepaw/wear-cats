@@ -12,7 +12,7 @@ android {
         applicationId = "com.turtlepaw.sleeptools"
         minSdk = 30
         targetSdk = 33
-        versionCode = 9
+        versionCode = 10
         versionName = "1.1"
         vectorDrawables {
             useSupportLibrary = true
@@ -20,7 +20,7 @@ android {
     }
 
     buildTypes {
-        release {
+        getByName("release") {w
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -30,6 +30,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -75,5 +76,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     //wearApp(project(":wear"))
 }
