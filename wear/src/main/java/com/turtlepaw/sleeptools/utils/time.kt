@@ -3,10 +3,9 @@ package com.turtlepaw.sleeptools.utils
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
-import androidx.compose.ui.graphics.Color
 import java.time.Duration
+import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
 data class TimeDifference(val hours: Long, val minutes: Long)
@@ -22,10 +21,6 @@ enum class SleepQuality(private val title: String, private val color: Int) {
 
     fun getTitle(): String {
         return title
-    }
-
-    fun getColor(): Int {
-        return color
     }
 }
 
@@ -59,6 +54,14 @@ class TimeManager {
         }
     }
 
+    fun parseDateTime(time: String?, fallback: LocalDateTime? = null): LocalDateTime {
+        return try {
+            LocalDateTime.parse(time)
+        } catch (e: DateTimeParseException) {
+            fallback ?: LocalDateTime.now()
+        }
+    }
+
     /**
      * @return Pair of wake time and type of wake time (`USER_DEFINED` or `SYSTEM_ALARM`)
      */
@@ -68,7 +71,7 @@ class TimeManager {
         wakeTime: String?,
         fallback: LocalTime?
     ): Pair<LocalTime, AlarmType> {
-        val parsedTime = parseTime(wakeTime, fallback);
+        val parsedTime = parseTime(wakeTime, fallback)
 
         return if (useAlarm) {
             Log.d("TimeManager", "Next alarm: $nextAlarm")
@@ -82,23 +85,5 @@ class TimeManager {
                 AlarmType.USER_DEFINED
             )
         }
-    }
-
-    fun getWakeTimeWithAlarm(
-        context: Context,
-        sharedPreferences: SharedPreferences
-    ): Pair<LocalTime, AlarmType> {
-        val alarmManager = AlarmsManager()
-        val fallback = Settings.WAKE_TIME.getDefaultAsLocalTime()
-        val useAlarm = sharedPreferences.getBoolean(Settings.ALARM.getKey(), Settings.ALARM.getDefaultAsBoolean())
-        val nextAlarm = alarmManager.fetchAlarms(context)
-        val wakeTime = sharedPreferences.getString(Settings.WAKE_TIME.getKey(), Settings.WAKE_TIME.getDefault())
-
-        return this.getWakeTime(
-            useAlarm,
-            nextAlarm,
-            wakeTime,
-            fallback
-        )
     }
 }

@@ -1,11 +1,9 @@
 package com.turtlepaw.sleeptools.utils
 
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.turtlepaw.sleeptools.utils.BedtimeViewModel.PreferencesKeys.BEDTIME_HISTORY_KEY
@@ -13,7 +11,6 @@ import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 
-const val BEDTIME_STORAGE_KEY = "bedtime_key"
 class BedtimeViewModel(private val dataStore: DataStore<Preferences>) : ViewModel() {
     private object PreferencesKeys {
         val BEDTIME_HISTORY_KEY = stringSetPreferencesKey("bedtime_history")
@@ -23,6 +20,14 @@ class BedtimeViewModel(private val dataStore: DataStore<Preferences>) : ViewMode
         dataStore.edit { preferences ->
             val bedtimeHistory = (preferences[BEDTIME_HISTORY_KEY] ?: mutableSetOf()).toMutableSet()
             bedtimeHistory += date.toString()
+            preferences[BEDTIME_HISTORY_KEY] = bedtimeHistory
+        }
+    }
+
+    suspend fun delete(date: LocalDateTime) {
+        dataStore.edit { preferences ->
+            val bedtimeHistory = (preferences[BEDTIME_HISTORY_KEY] ?: mutableSetOf()).toMutableSet()
+            bedtimeHistory.remove(date.toString())
             preferences[BEDTIME_HISTORY_KEY] = bedtimeHistory
         }
     }
@@ -46,6 +51,12 @@ class BedtimeViewModel(private val dataStore: DataStore<Preferences>) : ViewMode
         val preferences = dataStore.data.first() // blocking call to get the latest preferences
         val bedtimeHistory = preferences[BEDTIME_HISTORY_KEY] ?: emptySet()
         return bedtimeHistory.lastOrNull()?.let { parseDate(it) }
+    }
+
+    suspend fun getItem(key: String): LocalDateTime? {
+        val preferences = dataStore.data.first() // blocking call to get the latest preferences
+        val bedtimeHistory = preferences[BEDTIME_HISTORY_KEY] ?: emptySet()
+        return bedtimeHistory.find { s -> s === key }?.let { parseDate(it) }
     }
 }
 
