@@ -116,7 +116,7 @@ fun WearHistory(
                                     fontSize = 22.sp,
                                     fontWeight = FontWeight.Medium
                                 )
-                                Spacer(modifier = Modifier.padding(8.dp))
+                                Spacer(modifier = Modifier.padding(6.dp))
                                 Text(
                                     fontSize = 22.sp,
                                     text = timeFormatter.format(time)

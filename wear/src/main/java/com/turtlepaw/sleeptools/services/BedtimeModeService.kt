@@ -27,7 +27,7 @@ class BedtimeModeService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "Unregistering receiver...")
+        Log.d(TAG, "Unregistering the receiver...")
         unregisterReceiver(bedtimeModeListener)
     }
 

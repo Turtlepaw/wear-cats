@@ -7,7 +7,9 @@ import android.util.Log
 import androidx.annotation.Keep
 import com.turtlepaw.sleeptools.presentation.dataStore
 import com.turtlepaw.sleeptools.utils.BedtimeModeManager
+import com.turtlepaw.sleeptools.utils.BedtimeSensor
 import com.turtlepaw.sleeptools.utils.BedtimeViewModel
+import com.turtlepaw.sleeptools.utils.verifySensor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,10 +29,13 @@ class BedtimeModeListener: BroadcastReceiver() {
 
     private suspend fun runReceiver(context: Context) {
         Log.d(TAG, "Retrieving new bedtime state...")
+        if(!verifySensor(context, BedtimeSensor.BEDTIME)) {
+            Log.d(TAG, "Bedtime mode sensor is off")
+            return
+        }
         val bedtimeViewModel = BedtimeViewModel(context.applicationContext.dataStore)
         val bedtimeManager = BedtimeModeManager()
         val bedtimeState = bedtimeManager.isBedtimeModeEnabled(context, bedtimeViewModel)
         Log.d(TAG, "Bedtime mode is currently $bedtimeState")
     }
-
 }

@@ -12,17 +12,17 @@ import com.turtlepaw.sleeptools.utils.Settings
 import java.time.LocalTime
 
 @Composable
-fun WakeTimePicker(
-    closePicker: () -> Unit,
-    userWakeTime: LocalTime,
-    setWakeTime: (value: LocalTime) -> Unit
+fun TimePicker(
+    close: () -> Unit,
+    defaultTime: LocalTime,
+    setTime: (value: LocalTime) -> Unit
 ){
     SleepTheme {
         TimePickerWith12HourClock(
-            time = userWakeTime,
+            time = defaultTime,
             onTimeConfirm = { time ->
-                setWakeTime(time)
-                closePicker()
+                setTime(time)
+                close()
             }
         )
     }
@@ -31,9 +31,9 @@ fun WakeTimePicker(
 @Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @Composable
 fun WakeTimePickerPreview() {
-    WakeTimePicker(
-        closePicker = {},
-        userWakeTime = Settings.WAKE_TIME.getDefaultAsLocalTime(),
-        setWakeTime = {}
+    TimePicker(
+        close = {},
+        defaultTime = Settings.WAKE_TIME.getDefaultAsLocalTime(),
+        setTime = {}
     )
 }

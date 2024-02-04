@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -25,31 +26,41 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.navigation
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import androidx.wear.tooling.preview.devices.WearDevices
-import com.turtlepaw.sleeptools.presentation.pages.WakeTimePicker
+import com.turtlepaw.sleeptools.presentation.pages.TimePicker
 import com.turtlepaw.sleeptools.presentation.pages.history.WearHistory
 import com.turtlepaw.sleeptools.presentation.pages.WearHome
-import com.turtlepaw.sleeptools.presentation.pages.WearSettings
+import com.turtlepaw.sleeptools.presentation.pages.settings.WearSettings
 import com.turtlepaw.sleeptools.presentation.pages.history.WearHistoryDelete
+import com.turtlepaw.sleeptools.presentation.pages.settings.WearBedtimeSensorSetting
+import com.turtlepaw.sleeptools.presentation.pages.settings.WearBedtimeSettings
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
 import com.turtlepaw.sleeptools.services.BedtimeModeService
+import com.turtlepaw.sleeptools.services.ChargingService
 import com.turtlepaw.sleeptools.utils.AlarmType
 import com.turtlepaw.sleeptools.utils.AlarmsManager
 import com.turtlepaw.sleeptools.utils.BedtimeModeManager
+import com.turtlepaw.sleeptools.utils.BedtimeSensor
 import com.turtlepaw.sleeptools.utils.BedtimeViewModel
 import com.turtlepaw.sleeptools.utils.BedtimeViewModelFactory
 import com.turtlepaw.sleeptools.utils.Settings
 import com.turtlepaw.sleeptools.utils.SettingsBasics
 import com.turtlepaw.sleeptools.utils.TimeManager
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.LocalTime
 
 enum class Routes(private val route: String) {
     HOME("/home"),
     SETTINGS("/settings"),
+    SETTINGS_BEDTIME("/settings/bedtime"),
+    SETTINGS_TIMEFRAME_START("/settings/bedtime/start"),
+    SETTINGS_TIMEFRAME_END("/settings/bedtime/end"),
+    SETTINGS_BEDTIME_SENSOR("/settings/bedtime/sensor"),
     TIME_PICKER("/time-picker"),
     HISTORY("/history"),
     DELETE_HISTORY("/history/delete");
@@ -81,6 +92,12 @@ class MainActivity : ComponentActivity() {
                 BedtimeModeService::class.java
             )
         )
+        startService(
+            Intent(
+                this,
+                ChargingService::class.java
+            )
+        )
         val sharedPreferences = getSharedPreferences(
             SettingsBasics.SHARED_PREFERENCES.getKey(),
             SettingsBasics.SHARED_PREFERENCES.getMode()
@@ -100,9 +117,20 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         Log.d("MAIN_ACTIVITY", "Refreshing database...")
-        // You might not need to recreate the ViewModel here, as you've already created it in onCreate
-        // bedtimeViewModel = BedtimeViewModel(this)
+        // Refresh the model
+        val sharedPreferences = getSharedPreferences(
+            SettingsBasics.SHARED_PREFERENCES.getKey(),
+            SettingsBasics.SHARED_PREFERENCES.getMode()
+        )
+
+        bedtimeViewModelFactory = BedtimeViewModelFactory(dataStore)
+
+        bedtimeViewModel = ViewModelProvider(this, bedtimeViewModelFactory)[BedtimeViewModel::class.java]
         Log.d("MAIN_ACTIVITY", "Database refreshed")
+
+        setContent {
+            WearPages(sharedPreferences, bedtimeViewModel, this)
+        }
     }
 }
 
@@ -116,6 +144,16 @@ fun WearPages(sharedPreferences: SharedPreferences, bedtimeViewModel: BedtimeVie
         val alarmManager = AlarmsManager()
         // Fetches the wake time from settings
         val wakeTimeString = sharedPreferences.getString(Settings.WAKE_TIME.getKey(), Settings.WAKE_TIME.getDefault()) // Default to midnight
+        // Settings timeframe start
+        // Fetches the wake time from settings
+        val timeframeStartString = sharedPreferences.getString(Settings.BEDTIME_START.getKey(), Settings.BEDTIME_START.getDefault())
+        val timeframeEndString = sharedPreferences.getString(Settings.BEDTIME_END.getKey(), Settings.BEDTIME_END.getDefault())
+        var useTimeframe = sharedPreferences.getBoolean(Settings.BEDTIME_TIMEFRAME.getKey(), Settings.BEDTIME_TIMEFRAME.getDefaultAsBoolean())
+        val bedtimeStringSensor = sharedPreferences.getString(Settings.BEDTIME_SENSOR.getKey(), Settings.BEDTIME_SENSOR.getDefault())
+        var bedtimeSensor = if(bedtimeStringSensor == "BEDTIME") BedtimeSensor.BEDTIME else BedtimeSensor.CHARGING;
+        // parsed
+        var timeframeStart = timeManager.parseTime(timeframeStartString, Settings.BEDTIME_START.getDefaultAsLocalTime())
+        var timeframeEnd = timeManager.parseTime(timeframeEndString, Settings.BEDTIME_END.getDefaultAsLocalTime())
         // Use Alarm - uses system alarm as wake time
         val useAlarmBool = sharedPreferences.getBoolean(Settings.ALARM.getKey(), Settings.ALARM.getDefaultAsBoolean()) // Default to on
         var useAlarm by remember { mutableStateOf(useAlarmBool) }
@@ -130,11 +168,13 @@ fun WearPages(sharedPreferences: SharedPreferences, bedtimeViewModel: BedtimeVie
         // History
         var history by remember { mutableStateOf<Set<LocalDateTime?>>(emptySet()) }
         var loading by remember { mutableStateOf<Boolean>(true) }
-        LaunchedEffect(key1 = Unit) {
+        // Suspended functions
+        val coroutineScope = rememberCoroutineScope()
+        LaunchedEffect(key1 = bedtimeModeManager) {
             history = bedtimeViewModel.getHistory()
             loading = false
         }
-        LaunchedEffect(key1 = Unit) {
+        LaunchedEffect(key1 = bedtimeModeManager) {
             // Launch a coroutine to perform async operations
             lastBedtime = bedtimeModeManager.getLastBedtime(bedtimeViewModel)
         }
@@ -189,13 +229,51 @@ fun WearPages(sharedPreferences: SharedPreferences, bedtimeViewModel: BedtimeVie
                     useAlerts
                 )
             }
+            composable(Routes.SETTINGS_BEDTIME.getRoute()) {
+                WearBedtimeSettings(
+                    navigator = navController,
+                    timeframeStart,
+                    setTimeStart = { value ->
+                        timeframeStart = value
+                        val editor = sharedPreferences.edit()
+                        editor.putString(Settings.BEDTIME_START.getKey(), value.toString())
+                        editor.apply()
+                    },
+                    timeframeEnd,
+                    setTimeEnd = { value ->
+                        timeframeEnd = value
+                        val editor = sharedPreferences.edit()
+                        editor.putString(Settings.BEDTIME_END.getKey(), value.toString())
+                        editor.apply()
+                    },
+                    timeframeEnabled = useTimeframe,
+                    setTimeframe = { value ->
+                        useTimeframe = value
+                        val editor = sharedPreferences.edit()
+                        editor.putBoolean(Settings.BEDTIME_TIMEFRAME.getKey(), value)
+                        editor.apply()
+                    }
+                )
+            }
+            composable(Routes.SETTINGS_BEDTIME_SENSOR.getRoute()) {
+                WearBedtimeSensorSetting(
+                    navigator = navController,
+                    sensor = bedtimeSensor,
+                    setSensor = { value ->
+                        bedtimeSensor = value
+                        val editor = sharedPreferences.edit()
+                        editor.putString(Settings.BEDTIME_SENSOR.getKey(), value.toString())
+                        editor.apply()
+                    }
+                )
+            }
             composable(Routes.TIME_PICKER.getRoute()){
-                WakeTimePicker(
-                    closePicker = {
+                TimePicker(
+                    close = {
                         navController.popBackStack()
                     },
                     userWakeTime,
-                    setWakeTime = { value ->
+                    setTime = { value ->
                         // Set the wake time ONLY if
                         // it's user defined
                         if(wakeTime.second === AlarmType.USER_DEFINED)
@@ -203,7 +281,49 @@ fun WearPages(sharedPreferences: SharedPreferences, bedtimeViewModel: BedtimeVie
 
                         userWakeTime = value
                         val editor = sharedPreferences.edit()
-                        editor.putString("wake_time", value.toString())
+                        editor.putString(Settings.WAKE_TIME.getKey(), value.toString())
+                        editor.apply()
+                    }
+                )
+            }
+            composable(Routes.SETTINGS_TIMEFRAME_START.getRoute()){
+                TimePicker(
+                    close = {
+                        navController.popBackStack()
+                    },
+                    timeframeStart,
+                    setTime = { value ->
+                        timeframeStart = value
+                        val editor = sharedPreferences.edit()
+                        editor.putString(Settings.BEDTIME_START.getKey(), value.toString())
+                        editor.apply()
+                    }
+                )
+            }
+            composable(Routes.SETTINGS_TIMEFRAME_END.getRoute()){
+                TimePicker(
+                    close = {
+                        navController.popBackStack()
+                    },
+                    timeframeEnd,
+                    setTime = { value ->
+                        timeframeEnd = value
+                        val editor = sharedPreferences.edit()
+                        editor.putString(Settings.BEDTIME_END.getKey(), value.toString())
+                        editor.apply()
+                    }
+                )
+            }
+            composable(Routes.SETTINGS_TIMEFRAME_END.getRoute()){
+                TimePicker(
+                    close = {
+                        navController.popBackStack()
+                    },
+                    timeframeEnd,
+                    setTime = { value ->
+                        timeframeEnd = value
+                        val editor = sharedPreferences.edit()
+                        editor.putString(Settings.BEDTIME_END.getKey(), value.toString())
                         editor.apply()
                     }
                 )
@@ -224,6 +344,9 @@ fun WearPages(sharedPreferences: SharedPreferences, bedtimeViewModel: BedtimeVie
                         val mutated = history.toMutableSet()
                         mutated.remove(time)
                         history = mutated
+                        coroutineScope.launch {
+                            lastBedtime = bedtimeModeManager.getLastBedtime(bedtimeViewModel)
+                        }
                     }
                 )
             }
