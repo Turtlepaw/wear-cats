@@ -21,6 +21,7 @@ import java.time.LocalDateTime
 @Keep
 class ChargingReceiver: BaseReceiver() {
     override val tag = "ChargingReceiver"
+    override val sensorType = BedtimeSensor.CHARGING
 
     override fun onReceive(context: Context, intent: Intent) {
         Log.d(tag, "Received charging change... ($intent)")

@@ -10,13 +10,11 @@ import androidx.annotation.Keep
 import com.turtlepaw.sleeptools.common.BaseReceiver
 
 @Keep
-class Receiver: BaseReceiver() {
-    override val tag = "Receiver"
-
+class Receiver: BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if(intent.action == NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED){
             BedtimeModeListener().onReceive(context, intent)
-        } else if(intent.action == NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED){
+        } else if(intent.action == Intent.ACTION_POWER_CONNECTED){
             ChargingReceiver().onReceive(context, intent)
         }
     }

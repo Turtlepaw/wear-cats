@@ -16,10 +16,7 @@ open class SleepApplication : Application() {
         // in or unplugged. Updates will also be triggered when the system reports low battery and when it recovers.
         registerReceiver(
             sensorReceiver,
-            IntentFilter().apply {
-                addAction(Intent.ACTION_POWER_CONNECTED)
-                addAction(Intent.ACTION_POWER_DISCONNECTED)
-            }
+            IntentFilter(Intent.ACTION_POWER_CONNECTED)
         )
 
         // This will trigger for DND changes, including bedtime and theater mode

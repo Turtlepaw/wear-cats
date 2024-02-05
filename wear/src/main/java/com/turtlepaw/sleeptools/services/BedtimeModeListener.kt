@@ -22,6 +22,7 @@ import java.time.LocalDateTime
 @Keep
 class BedtimeModeListener: BaseReceiver() {
     override val tag = "BedtimeModeReceiver"
+    override val sensorType = BedtimeSensor.BEDTIME
 
     override fun onReceive(context: Context, intent: Intent) {
         Log.d(tag, "Received bedtime mode change... ($intent)")
