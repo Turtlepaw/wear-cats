@@ -7,12 +7,13 @@
 package com.turtlepaw.sleeptools.presentation
 
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,21 +27,18 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.navigation
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import androidx.wear.tooling.preview.devices.WearDevices
 import com.turtlepaw.sleeptools.presentation.pages.TimePicker
-import com.turtlepaw.sleeptools.presentation.pages.history.WearHistory
 import com.turtlepaw.sleeptools.presentation.pages.WearHome
-import com.turtlepaw.sleeptools.presentation.pages.settings.WearSettings
+import com.turtlepaw.sleeptools.presentation.pages.history.WearHistory
 import com.turtlepaw.sleeptools.presentation.pages.history.WearHistoryDelete
 import com.turtlepaw.sleeptools.presentation.pages.settings.WearBedtimeSensorSetting
 import com.turtlepaw.sleeptools.presentation.pages.settings.WearBedtimeSettings
+import com.turtlepaw.sleeptools.presentation.pages.settings.WearSettings
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
-import com.turtlepaw.sleeptools.services.BedtimeModeService
-import com.turtlepaw.sleeptools.services.ChargingService
 import com.turtlepaw.sleeptools.utils.AlarmType
 import com.turtlepaw.sleeptools.utils.AlarmsManager
 import com.turtlepaw.sleeptools.utils.BedtimeModeManager
@@ -79,6 +77,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var bedtimeViewModelFactory: BedtimeViewModelFactory
     private lateinit var bedtimeViewModel: BedtimeViewModel
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
@@ -86,18 +85,32 @@ class MainActivity : ComponentActivity() {
 
         setTheme(android.R.style.Theme_DeviceDefault)
         // Start listening for bedtime mode
-        startService(
-            Intent(
-                this,
-                BedtimeModeService::class.java
-            )
-        )
-        startService(
-            Intent(
-                this,
-                ChargingService::class.java
-            )
-        )
+//        startService(
+//            Intent(
+//                this,
+//                BedtimeModeService::class.java
+//            )
+//        )
+        //val bedtimeIntent = Intent(this, BedtimeModeService::class.java)
+        //startForegroundService(bedtimeIntent)
+        //startService(bedtimeIntent)
+        //Log.i("BedtimeService", "Started as service")
+        //val chargingIntent = Intent(this, ChargingService::class.java)
+        //startForegroundService(chargingIntent)
+        //startService(chargingIntent)
+        //Log.i("BedtimeListener", "Registering receiver...")
+//        val bedtimeModeListener = BedtimeModeListener()
+//        registerReceiver(
+//            bedtimeModeListener,
+//            IntentFilter(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED)
+//        )
+        Log.i("ChargingService", "Started as service")
+        //        startService(
+//            Intent(
+//                this,
+//                ChargingService::class.java
+//            )
+//        )
         val sharedPreferences = getSharedPreferences(
             SettingsBasics.SHARED_PREFERENCES.getKey(),
             SettingsBasics.SHARED_PREFERENCES.getMode()

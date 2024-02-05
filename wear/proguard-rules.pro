@@ -13,8 +13,13 @@
 
 # Keep broadcast receivers
 -keep class com.turtlepaw.sleeptools.services.** { *; }
+-keep class com.turtlepaw.sleeptools.services.Receiver { *; }
+# Bedtime Mode
 -keep class com.turtlepaw.sleeptools.services.BedtimeModeListener { *; }
 -keep class com.turtlepaw.sleeptools.services.BedtimeModeService { *; }
+# Charging
+-keep class com.turtlepaw.sleeptools.services.ChargingListener { *; }
+-keep class com.turtlepaw.sleeptools.services.ChargingService { *; }
 
 # Keep utils
 -keep class com.turtlepaw.sleeptools.utils.** { *; }

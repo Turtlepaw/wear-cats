@@ -1,6 +1,7 @@
 package com.turtlepaw.sleeptools.utils
 
 import android.content.Context
+import android.util.Log
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -95,7 +96,8 @@ fun verifySensor(context: Context, sensor: BedtimeSensor): Boolean {
     val timeManager = TimeManager()
     val bedtimeStringSensor = sharedPreferences.getString(Settings.BEDTIME_SENSOR.getKey(), Settings.BEDTIME_SENSOR.getDefault())
     val bedtimeSensor = if(bedtimeStringSensor == "BEDTIME") BedtimeSensor.BEDTIME else BedtimeSensor.CHARGING;
-    if(bedtimeSensor != sensor) return false;
+    Log.d("VerifySensor", "Sensor set to $bedtimeStringSensor (requires $sensor, result: ${bedtimeStringSensor != sensor.toString()})")
+    if(bedtimeStringSensor != sensor.toString()) return false
 
     val useTimeframe = sharedPreferences.getBoolean(Settings.BEDTIME_TIMEFRAME.getKey(), Settings.BEDTIME_TIMEFRAME.getDefaultAsBoolean())
     if(!useTimeframe) return true
