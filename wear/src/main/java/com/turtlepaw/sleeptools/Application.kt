@@ -10,6 +10,8 @@ open class SleepApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        // The following code is from home assistant:
+        // https://github.com/home-assistant/android/
         val sensorReceiver = Receiver()
         // This will cause the sensor to be updated every time the OS broadcasts that a cable was plugged/unplugged.
         // This should be nearly instantaneous allowing automations to fire immediately when a phone is plugged

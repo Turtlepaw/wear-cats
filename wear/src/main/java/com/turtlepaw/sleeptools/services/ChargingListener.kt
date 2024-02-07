@@ -26,25 +26,20 @@ class ChargingReceiver: BaseReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Log.d(tag, "Received charging change... ($intent)")
         CoroutineScope(Dispatchers.Default).launch {
-            runReceiver(context, intent)
+            runReceiver(context)
         }
     }
 
-    private suspend fun runReceiver(context: Context, intent: Intent) {
+    private suspend fun runReceiver(context: Context) {
         Log.d(tag, "Retrieving new charging state...")
         if(!verifySensor(context, BedtimeSensor.CHARGING)) {
             Log.d(tag, "Charging mode sensor is off")
             return
         }
         val bedtimeViewModel = BedtimeViewModel(context.applicationContext.dataStore)
-        val status: Int = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-        // If the watch is charging
-        if(status == BatteryManager.BATTERY_STATUS_CHARGING){
-            Log.d(tag, "Setting charging bedtime to $status")
-            bedtimeViewModel.save(LocalDateTime.now())
-        } else {
-            Log.d(tag, "Currently not charging")
-        }
-        Log.d(tag, "Charging state is currently $status")
+        // This will only trigger when the watch is
+        // plugged in, so we don't need to check
+        Log.d(tag, "Saving new entry...")
+        bedtimeViewModel.save(LocalDateTime.now())
     }
 }

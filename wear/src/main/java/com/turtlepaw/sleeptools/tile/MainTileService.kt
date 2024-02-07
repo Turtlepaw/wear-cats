@@ -5,11 +5,21 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.argb
+import androidx.wear.protolayout.DimensionBuilders.ImageDimension
 import androidx.wear.protolayout.DimensionBuilders.SpProp
+import androidx.wear.protolayout.DimensionBuilders.dp
+import androidx.wear.protolayout.DimensionBuilders.expand
 import androidx.wear.protolayout.LayoutElementBuilders
+import androidx.wear.protolayout.LayoutElementBuilders.ColorFilter
+import androidx.wear.protolayout.LayoutElementBuilders.Image
+import androidx.wear.protolayout.LayoutElementBuilders.Row
 import androidx.wear.protolayout.LayoutElementBuilders.SpanText
 import androidx.wear.protolayout.LayoutElementBuilders.Spannable
+import androidx.wear.protolayout.ModifiersBuilders
+import androidx.wear.protolayout.ModifiersBuilders.Modifiers
 import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
 import androidx.wear.protolayout.material.CircularProgressIndicator
@@ -32,11 +42,19 @@ import com.turtlepaw.sleeptools.utils.SleepQuality
 import com.turtlepaw.sleeptools.utils.TimeDifference
 import com.turtlepaw.sleeptools.utils.TimeManager
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 
 private const val RESOURCES_VERSION = "1"
 private const val DEFAULT_GOAL = 8 // 8hrs
 private const val LAUNCH_APP_ID = "LAUNCH_APP"
+enum class Images(private val id: String) {
+    SLEEP_QUALITY("sleep_quality");
+
+    fun getId(): String {
+        return id
+    }
+}
 
 /**
  * Skeleton for a tile with no images.
@@ -49,11 +67,11 @@ class MainTileService : SuspendingTileService() {
         return ResourceBuilders.Resources.Builder()
             .setVersion(RESOURCES_VERSION)
             .addIdToImageMapping(
-                "sleep_icon",
+                Images.SLEEP_QUALITY.getId(),
                 ResourceBuilders.ImageResource.Builder()
                     .setAndroidResourceByResId(
                         ResourceBuilders.AndroidImageResourceByResId.Builder()
-                        .setResourceId(R.drawable.sleep)
+                        .setResourceId(R.drawable.sleep_quality)
                         .build()
                     ).build()
             ).build()
@@ -63,7 +81,7 @@ class MainTileService : SuspendingTileService() {
         requestParams: RequestBuilders.TileRequest
     ): TileBuilders.Tile {
         val lastClickableId = requestParams.currentState.lastClickableId
-        if (lastClickableId === LAUNCH_APP_ID) {
+        if (lastClickableId == LAUNCH_APP_ID) {
             Log.d("Tile", "Launching main activity...")
             startActivity(packageManager.getLaunchIntentForPackage(packageName))
         }
@@ -96,7 +114,33 @@ class MainTileService : SuspendingTileService() {
         val singleTileTimeline = TimelineBuilders.Timeline.Builder().addTimelineEntry(
             TimelineBuilders.TimelineEntry.Builder().setLayout(
                 LayoutElementBuilders.Layout.Builder().setRoot(
-                    tileLayout(this, sleepTime, sleepQuality).build()
+                    LayoutElementBuilders.Box.Builder()
+                        .setWidth(expand())
+                        .setHeight(expand())
+                        .setModifiers(
+                            // https://stackoverflow.com/a/77947118/15751555
+                            Modifiers.Builder()
+                                .setClickable(
+                                    ModifiersBuilders.Clickable.Builder()
+                                        .setId(LAUNCH_APP_ID)
+                                        .setOnClick(
+                                            ActionBuilders.LoadAction.Builder()
+                                                .build()
+                                        )
+                                        .build()
+                                )
+                                .build()
+                        )
+                        .addContent(
+                            tileLayout(
+                                this,
+                                sleepTime,
+                                sleepQuality,
+                                wakeTime.first
+                            )
+                                .build()
+                        )
+                        .build()
                 ).build()
             ).build()
         ).build()
@@ -116,15 +160,17 @@ class MainTileService : SuspendingTileService() {
 private fun tileLayout(
     context: Context,
     sleepTime: TimeDifference,
-    sleepQuality: SleepQuality
+    sleepQuality: SleepQuality,
+    wakeTime: LocalTime
 ): EdgeContentLayout.Builder {
+    val formatter = DateTimeFormatter.ofPattern("h:mma")
     val deviceParameters = buildDeviceParameters(context.resources)
     return EdgeContentLayout.Builder(deviceParameters)
         .setEdgeContent(
             CircularProgressIndicator.Builder()
                 .setProgress(sleepTime.hours.toFloat() / DEFAULT_GOAL)
-                .setStartAngle(-165f)
-                .setEndAngle(165f)
+                .setStartAngle(-170f)
+                .setEndAngle(170f)
                 .setCircularProgressIndicatorColors(
                     ProgressIndicatorColors(
                         TileColors.PrimaryColor,
@@ -140,9 +186,19 @@ private fun tileLayout(
                 .build()
         )
         .setSecondaryLabelTextContent(
-            Text.Builder(context, sleepQuality.getTitle())
-                .setTypography(Typography.TYPOGRAPHY_CAPTION1)
-                .setColor(argb(TileColors.White))
+            LayoutElementBuilders.Column.Builder()
+                .addContent(
+                    Text.Builder(context, "${formatter.format(LocalTime.now())}-${formatter.format(wakeTime)}")
+                        .setTypography(Typography.TYPOGRAPHY_BODY1)
+                        .setColor(argb(TileColors.White))
+                        .build()
+                )
+                .addContent(
+                    Text.Builder(context, sleepQuality.getTitle())
+                        .setTypography(Typography.TYPOGRAPHY_BODY2)
+                        .setColor(argb(TileColors.White))
+                        .build()
+                )
                 .build()
         )
         .setContent(
@@ -203,6 +259,7 @@ fun TilePreview() {
     LayoutRootPreview(root = tileLayout(
         LocalContext.current,
         timeDifference,
-        sleepQuality
+        sleepQuality,
+        LocalTime.NOON,
     ).build())
 }

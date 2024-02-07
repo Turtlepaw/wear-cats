@@ -46,6 +46,7 @@ fun WearHistory(
         val scalingLazyListState = rememberScalingLazyListState()
         val dayFormatter = DateTimeFormatter.ofPattern("E d")
         val timeFormatter = DateTimeFormatter.ofPattern("hh:mm a")
+        val dayAndTimeFormatter = DateTimeFormatter.ofPattern("E d hh:mm a")
 
         Box(
             modifier = Modifier
@@ -87,25 +88,6 @@ fun WearHistory(
                         Spacer(modifier = Modifier.padding(3.dp))
                     }
                     items(history.filterNotNull().toList().asReversed()) { time ->
-//                        Row(
-//                            modifier = Modifier
-//                                .fillMaxWidth()
-//                                .fillMaxHeight()
-//                                .wrapContentSize(Alignment.Center)
-//                                .padding(8.dp),
-//                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-//                        ) {
-//                            Text(
-//                                text = dayFormatter.format(time),
-//                                color = Color(0xFFE4C6FF),
-//                                fontSize = 22.sp,
-//                                fontWeight = FontWeight.Medium
-//                            )
-//                            Text(
-//                                fontSize = 22.sp,
-//                                text = timeFormatter.format(time)
-//                            )
-//                        }
                         Chip(onClick = { navigate.navigate(Routes.DELETE_HISTORY.getRoute(time.toString())) }, colors = ChipDefaults.chipColors(), border = ChipDefaults.chipBorder()) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically, // Add this line to align text vertically

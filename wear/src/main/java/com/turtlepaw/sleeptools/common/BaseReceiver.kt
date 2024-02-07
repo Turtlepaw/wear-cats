@@ -60,6 +60,7 @@ abstract class BaseReceiver: BroadcastReceiver() {
             Settings.BEDTIME_SENSOR.getKey(),
             Settings.BEDTIME_SENSOR.getDefault()
         )
+
         return bedtimeStringSensor != sensorType.toString()
     }
 
