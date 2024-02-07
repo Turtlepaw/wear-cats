@@ -20,6 +20,7 @@ import androidx.wear.protolayout.LayoutElementBuilders.SpanText
 import androidx.wear.protolayout.LayoutElementBuilders.Spannable
 import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.ModifiersBuilders.Modifiers
+import androidx.wear.protolayout.ModifiersBuilders.Padding
 import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
 import androidx.wear.protolayout.material.CircularProgressIndicator
@@ -191,6 +192,17 @@ private fun tileLayout(
                     Text.Builder(context, "${formatter.format(LocalTime.now())}-${formatter.format(wakeTime)}")
                         .setTypography(Typography.TYPOGRAPHY_BODY1)
                         .setColor(argb(TileColors.White))
+                        .setModifiers(
+                            Modifiers.Builder()
+                                .setPadding(
+                                    Padding.Builder()
+                                        .setBottom(
+                                            dp(20f)
+                                        )
+                                        .build()
+                                )
+                                .build()
+                        )
                         .build()
                 )
 //                .addContent(

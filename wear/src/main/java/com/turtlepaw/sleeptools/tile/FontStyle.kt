@@ -10,7 +10,7 @@ import androidx.wear.protolayout.expression.ProtoLayoutExperimental
 
 enum class FontStyle(private val fontSize: Float) {
     PrimaryFontSize(33f),
-    SecondaryFontSize(23f);
+    SecondaryFontSize(24f);
 
     private fun getFontSize(): Float {
         return fontSize
