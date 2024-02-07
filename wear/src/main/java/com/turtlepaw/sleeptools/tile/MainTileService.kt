@@ -114,11 +114,11 @@ class MainTileService : SuspendingTileService() {
         val singleTileTimeline = TimelineBuilders.Timeline.Builder().addTimelineEntry(
             TimelineBuilders.TimelineEntry.Builder().setLayout(
                 LayoutElementBuilders.Layout.Builder().setRoot(
+                    // https://stackoverflow.com/a/77947118/15751555
                     LayoutElementBuilders.Box.Builder()
                         .setWidth(expand())
                         .setHeight(expand())
                         .setModifiers(
-                            // https://stackoverflow.com/a/77947118/15751555
                             Modifiers.Builder()
                                 .setClickable(
                                     ModifiersBuilders.Clickable.Builder()
@@ -193,12 +193,12 @@ private fun tileLayout(
                         .setColor(argb(TileColors.White))
                         .build()
                 )
-                .addContent(
-                    Text.Builder(context, sleepQuality.getTitle())
-                        .setTypography(Typography.TYPOGRAPHY_BODY2)
-                        .setColor(argb(TileColors.White))
-                        .build()
-                )
+//                .addContent(
+//                    Text.Builder(context, sleepQuality.getTitle())
+//                        .setTypography(Typography.TYPOGRAPHY_BODY2)
+//                        .setColor(argb(TileColors.White))
+//                        .build()
+//                )
                 .build()
         )
         .setContent(
