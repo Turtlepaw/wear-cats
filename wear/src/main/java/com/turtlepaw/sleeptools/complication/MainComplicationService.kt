@@ -69,12 +69,12 @@ class MainComplicationService : SuspendingComplicationDataSourceService() {
                 value = number,
                 contentDescription = PlainComplicationText.Builder(contentDescription).build(),
             ).build()
-//            ComplicationType.NO_DATA -> TODO()
-//            ComplicationType.EMPTY -> TODO()
-//            ComplicationType.NOT_CONFIGURED -> TODO()
-//            ComplicationType.MONOCHROMATIC_IMAGE -> TODO()
-//            ComplicationType.SMALL_IMAGE -> TODO()
-//            ComplicationType.PHOTO_IMAGE -> TODO()
+            ComplicationType.NO_DATA -> TODO()
+            ComplicationType.EMPTY -> TODO()
+            ComplicationType.NOT_CONFIGURED -> TODO()
+            ComplicationType.MONOCHROMATIC_IMAGE -> TODO()
+            ComplicationType.SMALL_IMAGE -> TODO()
+            ComplicationType.PHOTO_IMAGE -> TODO()
             else -> throw IllegalArgumentException("unknown complication type")
 //            ComplicationType.GOAL_PROGRESS -> GoalProgressComplicationData.Builder(
 //                value = number,

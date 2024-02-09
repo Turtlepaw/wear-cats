@@ -5,17 +5,11 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.argb
-import androidx.wear.protolayout.DimensionBuilders.ImageDimension
-import androidx.wear.protolayout.DimensionBuilders.SpProp
 import androidx.wear.protolayout.DimensionBuilders.dp
 import androidx.wear.protolayout.DimensionBuilders.expand
 import androidx.wear.protolayout.LayoutElementBuilders
-import androidx.wear.protolayout.LayoutElementBuilders.ColorFilter
-import androidx.wear.protolayout.LayoutElementBuilders.Image
-import androidx.wear.protolayout.LayoutElementBuilders.Row
 import androidx.wear.protolayout.LayoutElementBuilders.SpanText
 import androidx.wear.protolayout.LayoutElementBuilders.Spannable
 import androidx.wear.protolayout.ModifiersBuilders
@@ -265,7 +259,7 @@ private fun tileLayout(
 @Composable
 fun TilePreview() {
     val timeManager = TimeManager()
-    val timeDifference = timeManager.calculateTimeDifference(LocalTime.MIDNIGHT);
+    val timeDifference = timeManager.calculateTimeDifference(LocalTime.of(5, 0));
     val sleepQuality = timeManager.calculateSleepQuality(timeDifference)
 
     LayoutRootPreview(root = tileLayout(
