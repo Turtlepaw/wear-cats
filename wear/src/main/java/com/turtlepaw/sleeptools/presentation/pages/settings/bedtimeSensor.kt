@@ -1,5 +1,6 @@
 package com.turtlepaw.sleeptools.presentation.pages.settings
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,8 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,21 +16,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.foundation.rememberActiveFocusRequester
-import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.RadioButton
-import androidx.wear.compose.material.Switch
-import androidx.wear.compose.material.SwitchDefaults
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.ToggleChip
@@ -39,11 +32,9 @@ import androidx.wear.compose.material.ToggleChipDefaults
 import androidx.wear.compose.material.scrollAway
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
-import com.turtlepaw.sleeptools.R
 import com.turtlepaw.sleeptools.presentation.components.ItemsListWithModifier
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
 import com.turtlepaw.sleeptools.utils.BedtimeSensor
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalWearFoundationApi::class, ExperimentalHorologistApi::class)
 @Composable
@@ -88,6 +79,7 @@ fun WearBedtimeSensorSetting(
                     Spacer(modifier = Modifier.padding(1.dp))
                 }
                 item {
+                    Log.d("BedtimeSensorConfig", "Is bedtime enabled? ${state == BedtimeSensor.BEDTIME} Is charging enabled? ${state == BedtimeSensor.CHARGING} sensor at ${state}")
                     ToggleChip(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -96,7 +88,7 @@ fun WearBedtimeSensorSetting(
                                 start = 8.dp,
                                 end = 8.dp
                             ),
-                        checked = state === BedtimeSensor.BEDTIME,
+                        checked = state == BedtimeSensor.BEDTIME,
                         onCheckedChange = {
                             setSensor(BedtimeSensor.BEDTIME)
                             state = BedtimeSensor.BEDTIME
@@ -106,7 +98,7 @@ fun WearBedtimeSensorSetting(
                         },
                         toggleControl = {
                             RadioButton(
-                                selected = state === BedtimeSensor.BEDTIME,
+                                selected = state == BedtimeSensor.BEDTIME,
                             )
                         },
                         enabled = true,
@@ -124,7 +116,7 @@ fun WearBedtimeSensorSetting(
                                 start = 8.dp,
                                 end = 8.dp
                             ),
-                        checked = state === BedtimeSensor.CHARGING,
+                        checked = state == BedtimeSensor.CHARGING,
                         onCheckedChange = {
                             setSensor(BedtimeSensor.CHARGING)
                             state = BedtimeSensor.CHARGING
@@ -134,7 +126,7 @@ fun WearBedtimeSensorSetting(
                         },
                         toggleControl = {
                             RadioButton(
-                                selected = state === BedtimeSensor.CHARGING,
+                                selected = state == BedtimeSensor.CHARGING,
                             )
                         },
                         enabled = true,

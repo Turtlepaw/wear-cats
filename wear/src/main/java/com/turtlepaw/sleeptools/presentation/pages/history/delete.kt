@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.CircularProgressIndicator
@@ -32,7 +31,6 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.dialog.Confirmation
-import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.turtlepaw.sleeptools.R
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
 import com.turtlepaw.sleeptools.utils.BedtimeViewModel
@@ -40,21 +38,33 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class)
+sealed class Item {
+    class LocalDateTimeItem(val value: LocalDateTime) : Item()
+    class StringItem(val value: String) : Item()
+}
+
 @Composable
 fun WearHistoryDelete(
     bedtimeViewModel: BedtimeViewModel,
-    item: LocalDateTime,
+    item: Item,
     navigation: NavHostController,
-    onDelete: (time: LocalDateTime) -> Unit
+    onDelete: (time: Item) -> Unit
 ) {
     SleepTheme {
         val dayFormatter = DateTimeFormatter.ofPattern("E d")
+        DateTimeFormatter.ofPattern("hh:mm a")
         var history by remember { mutableStateOf<LocalDateTime?>(null) }
         var loading by remember { mutableStateOf(true) }
         val coroutineScope = rememberCoroutineScope()
         LaunchedEffect(key1 = Unit) {
-            history = bedtimeViewModel.getItem(item.toString())
+            when (item) {
+                is Item.LocalDateTimeItem -> {
+                    history = bedtimeViewModel.getItem(item.value.toString())
+                }
+                is Item.StringItem -> {
+                    // do something with item.value as a String
+                }
+            }
             loading = false
         }
 
@@ -74,11 +84,18 @@ fun WearHistoryDelete(
                     Column(
                         verticalArrangement = Arrangement.Center
                     ){
-                        Box(
-                            contentAlignment = Alignment.Center,
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth()
                         ){
-                            Text(text = "Delete ${dayFormatter.format(item)}?")
+                            Text(text = "Delete ${when (item) {
+                                is Item.LocalDateTimeItem -> {
+                                    dayFormatter.format(item.value)
+                                }
+                                is Item.StringItem -> {
+                                    "all"
+                                }
+                            }}?")
                         }
                         Spacer(modifier = Modifier.padding(10.dp))
                         Row(
@@ -107,8 +124,16 @@ fun WearHistoryDelete(
                             Button(
                                 onClick = {
                                     coroutineScope.launch {
-                                        onDelete(item)
-                                        bedtimeViewModel.delete(item)
+                                        onDelete(
+                                            item
+                                        )
+
+                                        if(item is Item.LocalDateTimeItem){
+                                            bedtimeViewModel.delete(item.value)
+                                        } else {
+                                            bedtimeViewModel.deleteAll()
+                                        }
+
                                         navigation.popBackStack()
                                     }
                                 },

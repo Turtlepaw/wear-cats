@@ -17,7 +17,8 @@ fun SleepTheme(
         content = content,
         colors = Colors(
             primary = Color(0xFFE4C6FF),
-            secondary = Color(0xFFE4C6FF),
+            secondary = Color(android.graphics.Color.parseColor("#303333")),
+            onSecondary = Color(android.graphics.Color.parseColor("#e0e1e1")),
             background = Color.Black
         )
     )

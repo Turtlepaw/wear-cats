@@ -26,7 +26,9 @@ abstract class BaseReceiver: BroadcastReceiver() {
     private fun getSharedTime(sharedPreferences: SharedPreferences, key: String, fallback: LocalTime): LocalTime {
         val value = sharedPreferences.getString(key, null)
         return try {
-            LocalTime.parse(value)
+            value?.let {
+                LocalTime.parse(it)
+            } ?: fallback
         } catch (e: DateTimeParseException) {
             fallback
         }
@@ -39,6 +41,8 @@ abstract class BaseReceiver: BroadcastReceiver() {
         )
         // The user doesn't want it to be in a timeframe
         if(!useTimeframe) return true
+        // The user does want it to be in a certain timeframe
+        // let's get those times
         val timeframeStart = getSharedTime(
             sharedPreferences,
             Settings.BEDTIME_START.getKey(),
@@ -51,8 +55,14 @@ abstract class BaseReceiver: BroadcastReceiver() {
         )
         val now = LocalTime.now()
 
-        // Let's check if it's between the start and end
-        return now.isAfter(timeframeStart) && now.isBefore(timeframeEnd)
+        // Let's check if it's between the start and end, considering crossing midnight
+        return if (timeframeStart.isBefore(timeframeEnd)) {
+            // Timeframe is within the same day
+            now.isAfter(timeframeStart) && now.isBefore(timeframeEnd)
+        } else {
+            // Timeframe crosses midnight
+            now.isAfter(timeframeStart) || now.isBefore(timeframeEnd)
+        }
     }
 
     private fun isEnabled(sharedPreferences: SharedPreferences): Boolean {
@@ -61,19 +71,24 @@ abstract class BaseReceiver: BroadcastReceiver() {
             Settings.BEDTIME_SENSOR.getDefault()
         )
 
-        return bedtimeStringSensor != sensorType.toString()
+        return bedtimeStringSensor == sensorType.toString()
     }
 
-    override fun onReceive(context: Context, intent: Intent) {
+    fun checkShouldRun(context: Context, intent: Intent): Boolean {
         Log.d(tag, "Received intent: ${intent.action}")
         val sharedPreferences = getSharedPreferences(context)
+        val isEnabled = this.isEnabled(sharedPreferences)
+        val isInTimeframe = this.isInTimeframe(sharedPreferences)
 
-        if(!isEnabled(sharedPreferences)){
+        return if(!isEnabled){
             Log.d(tag, "Sensor not enabled, not updating sensor")
-            return
-        } else if(!isInTimeframe(sharedPreferences)) {
+            false
+        } else if(!isInTimeframe) {
             Log.d(tag, "Not in timeframe, not updating sensor")
-            return
-        } else Log.d(tag, "Updating sensor")
+            false
+        } else {
+            Log.d(tag, "Updating sensor")
+            true
+        }
     }
 }

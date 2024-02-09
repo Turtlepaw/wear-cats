@@ -1,10 +1,7 @@
 package com.turtlepaw.sleeptools.presentation.pages
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.wear.compose.material.Colors
-import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.composables.TimePickerWith12HourClock
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme

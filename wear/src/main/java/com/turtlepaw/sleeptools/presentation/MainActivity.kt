@@ -8,12 +8,10 @@ package com.turtlepaw.sleeptools.presentation
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,6 +31,7 @@ import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import androidx.wear.tooling.preview.devices.WearDevices
 import com.turtlepaw.sleeptools.presentation.pages.TimePicker
 import com.turtlepaw.sleeptools.presentation.pages.WearHome
+import com.turtlepaw.sleeptools.presentation.pages.history.Item
 import com.turtlepaw.sleeptools.presentation.pages.history.WearHistory
 import com.turtlepaw.sleeptools.presentation.pages.history.WearHistoryDelete
 import com.turtlepaw.sleeptools.presentation.pages.settings.WearBedtimeSensorSetting
@@ -41,7 +40,6 @@ import com.turtlepaw.sleeptools.presentation.pages.settings.WearSettings
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
 import com.turtlepaw.sleeptools.utils.AlarmType
 import com.turtlepaw.sleeptools.utils.AlarmsManager
-import com.turtlepaw.sleeptools.utils.BedtimeModeManager
 import com.turtlepaw.sleeptools.utils.BedtimeSensor
 import com.turtlepaw.sleeptools.utils.BedtimeViewModel
 import com.turtlepaw.sleeptools.utils.BedtimeViewModelFactory
@@ -76,41 +74,14 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = Set
 class MainActivity : ComponentActivity() {
     private lateinit var bedtimeViewModelFactory: BedtimeViewModelFactory
     private lateinit var bedtimeViewModel: BedtimeViewModel
+    private val tag = "MainSleepActivity"
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
 
         setTheme(android.R.style.Theme_DeviceDefault)
-        // Start listening for bedtime mode
-//        startService(
-//            Intent(
-//                this,
-//                BedtimeModeService::class.java
-//            )
-//        )
-        //val bedtimeIntent = Intent(this, BedtimeModeService::class.java)
-        //startForegroundService(bedtimeIntent)
-        //startService(bedtimeIntent)
-        //Log.i("BedtimeService", "Started as service")
-        //val chargingIntent = Intent(this, ChargingService::class.java)
-        //startForegroundService(chargingIntent)
-        //startService(chargingIntent)
-        //Log.i("BedtimeListener", "Registering receiver...")
-//        val bedtimeModeListener = BedtimeModeListener()
-//        registerReceiver(
-//            bedtimeModeListener,
-//            IntentFilter(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED)
-//        )
-        Log.i("ChargingService", "Started as service")
-        //        startService(
-//            Intent(
-//                this,
-//                ChargingService::class.java
-//            )
-//        )
         val sharedPreferences = getSharedPreferences(
             SettingsBasics.SHARED_PREFERENCES.getKey(),
             SettingsBasics.SHARED_PREFERENCES.getMode()
@@ -129,7 +100,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        Log.d("MAIN_ACTIVITY", "Refreshing database...")
+        Log.d(tag, "Refreshing database...")
         // Refresh the model
         val sharedPreferences = getSharedPreferences(
             SettingsBasics.SHARED_PREFERENCES.getKey(),
@@ -139,7 +110,7 @@ class MainActivity : ComponentActivity() {
         bedtimeViewModelFactory = BedtimeViewModelFactory(dataStore)
 
         bedtimeViewModel = ViewModelProvider(this, bedtimeViewModelFactory)[BedtimeViewModel::class.java]
-        Log.d("MAIN_ACTIVITY", "Database refreshed")
+        Log.d(tag, "Database refreshed")
 
         setContent {
             WearPages(sharedPreferences, bedtimeViewModel, this)
@@ -163,7 +134,7 @@ fun WearPages(sharedPreferences: SharedPreferences, bedtimeViewModel: BedtimeVie
         val timeframeEndString = sharedPreferences.getString(Settings.BEDTIME_END.getKey(), Settings.BEDTIME_END.getDefault())
         var useTimeframe = sharedPreferences.getBoolean(Settings.BEDTIME_TIMEFRAME.getKey(), Settings.BEDTIME_TIMEFRAME.getDefaultAsBoolean())
         val bedtimeStringSensor = sharedPreferences.getString(Settings.BEDTIME_SENSOR.getKey(), Settings.BEDTIME_SENSOR.getDefault())
-        var bedtimeSensor = if(bedtimeStringSensor == "BEDTIME") BedtimeSensor.BEDTIME else BedtimeSensor.CHARGING;
+        var bedtimeSensor = if(bedtimeStringSensor == "BEDTIME") BedtimeSensor.BEDTIME else BedtimeSensor.CHARGING
         // parsed
         var timeframeStart = timeManager.parseTime(timeframeStartString, Settings.BEDTIME_START.getDefaultAsLocalTime())
         var timeframeEnd = timeManager.parseTime(timeframeEndString, Settings.BEDTIME_END.getDefaultAsLocalTime())
@@ -176,20 +147,19 @@ fun WearPages(sharedPreferences: SharedPreferences, bedtimeViewModel: BedtimeVie
         // Fetches the next alarm from android's alarm manager
         val nextAlarm = alarmManager.fetchAlarms(context)
         // Uses Settings.Globals to get bedtime mode
-        val bedtimeModeManager = BedtimeModeManager()
         var lastBedtime by remember { mutableStateOf<LocalDateTime?>(null) }
         // History
-        var history by remember { mutableStateOf<Set<LocalDateTime?>>(emptySet()) }
-        var loading by remember { mutableStateOf<Boolean>(true) }
+        var history by remember { mutableStateOf<Set<Pair<LocalDateTime, BedtimeSensor>?>>(emptySet()) }
+        var loading by remember { mutableStateOf(true) }
         // Suspended functions
         val coroutineScope = rememberCoroutineScope()
-        LaunchedEffect(key1 = bedtimeModeManager) {
+        LaunchedEffect(key1 = bedtimeViewModel) {
             history = bedtimeViewModel.getHistory()
             loading = false
         }
-        LaunchedEffect(key1 = bedtimeModeManager) {
+        LaunchedEffect(key1 = bedtimeViewModel) {
             // Launch a coroutine to perform async operations
-            lastBedtime = bedtimeModeManager.getLastBedtime(bedtimeViewModel)
+            lastBedtime = bedtimeViewModel.getLatest()
         }
         // Parses the wake time and decides if it should use
         // user defined or system defined
@@ -351,14 +321,24 @@ fun WearPages(sharedPreferences: SharedPreferences, bedtimeViewModel: BedtimeVie
             composable(Routes.DELETE_HISTORY.getRoute("{id}")) {
                 WearHistoryDelete(
                     bedtimeViewModel,
-                    timeManager.parseDateTime(it.arguments?.getString("id")!!),
+                    item = if(it.arguments?.getString("id")!! == "ALL") Item.StringItem("ALL") else Item.LocalDateTimeItem(
+                        LocalDateTime.parse(it.arguments?.getString("id")!!)
+                    ),
                     navigation = navController,
                     onDelete = { time ->
                         val mutated = history.toMutableSet()
-                        mutated.remove(time)
+                        if(time is Item.LocalDateTimeItem){
+                            mutated.removeIf { date ->
+                                date?.first?.isEqual(time.value) ?: false
+                            }
+                        } else if(time is Item.StringItem){
+                            mutated.clear()
+                        }
+
                         history = mutated
+
                         coroutineScope.launch {
-                            lastBedtime = bedtimeModeManager.getLastBedtime(bedtimeViewModel)
+                            lastBedtime = bedtimeViewModel.getLatest()
                         }
                     }
                 )

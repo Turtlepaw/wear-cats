@@ -1,6 +1,5 @@
 package com.turtlepaw.sleeptools.presentation.pages.settings
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +20,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
@@ -39,15 +37,12 @@ import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.ToggleChip
 import androidx.wear.compose.material.ToggleChipDefaults
 import androidx.wear.compose.material.scrollAway
-import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.sleeptools.R
 import com.turtlepaw.sleeptools.presentation.Routes
 import com.turtlepaw.sleeptools.presentation.components.ItemsListWithModifier
 import com.turtlepaw.sleeptools.presentation.theme.SleepTheme
-import com.turtlepaw.sleeptools.utils.AlarmType
-import com.turtlepaw.sleeptools.utils.Settings
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 

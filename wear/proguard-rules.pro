@@ -15,11 +15,9 @@
 -keep class com.turtlepaw.sleeptools.services.** { *; }
 -keep class com.turtlepaw.sleeptools.services.Receiver { *; }
 # Bedtime Mode
--keep class com.turtlepaw.sleeptools.services.BedtimeModeListener { *; }
--keep class com.turtlepaw.sleeptools.services.BedtimeModeService { *; }
+-keep class com.turtlepaw.sleeptools.services.BedtimeModeReceiver { *; }
 # Charging
--keep class com.turtlepaw.sleeptools.services.ChargingListener { *; }
--keep class com.turtlepaw.sleeptools.services.ChargingService { *; }
+-keep class com.turtlepaw.sleeptools.services.ChargingReceiver { *; }
 
 # Keep utils
 -keep class com.turtlepaw.sleeptools.utils.** { *; }
