@@ -78,7 +78,7 @@ fun WearHistory(
         val focusRequester = rememberActiveFocusRequester()
         val scalingLazyListState = rememberScalingLazyListState()
         val dayFormatter = DateTimeFormatter.ofPattern("E d")
-        val timeFormatter = DateTimeFormatter.ofPattern("hh:mm a")
+        val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
 
         Box(
             modifier = Modifier

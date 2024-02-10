@@ -41,7 +41,7 @@ import java.time.format.DateTimeFormatter
 
 
 private const val RESOURCES_VERSION = "1"
-private const val DEFAULT_GOAL = 8 // 8hrs
+const val DEFAULT_GOAL = 8 // 8hrs
 private const val LAUNCH_APP_ID = "LAUNCH_APP"
 enum class Images(private val id: String) {
     SLEEP_QUALITY("sleep_quality");
