@@ -3,7 +3,7 @@
 -printseeds ./seeds.txt
 
 # Keep all classes in the application package
--keep class com.turtlepaw.sleeptools.** { *; }
+-keep class com.turtlepaw.sunlight.** { *; }
 
 # Keep all classes in Android Wear Compose library
 -keep class androidx.wear.compose.** { *; }
@@ -12,12 +12,12 @@
 -keep class androidx.compose.** { *; }
 
 # Keep broadcast receivers
--keep class com.turtlepaw.sleeptools.services.** { *; }
--keep class com.turtlepaw.sleeptools.services.Receiver { *; }
+-keep class com.turtlepaw.sunlight.services.** { *; }
+-keep class com.turtlepaw.sunlight.services.Receiver { *; }
 # Bedtime Mode
--keep class com.turtlepaw.sleeptools.services.BedtimeModeReceiver { *; }
+-keep class com.turtlepaw.sunlight.services.BedtimeModeReceiver { *; }
 # Charging
--keep class com.turtlepaw.sleeptools.services.ChargingReceiver { *; }
+-keep class com.turtlepaw.sunlight.services.ChargingReceiver { *; }
 
 # Keep utils
--keep class com.turtlepaw.sleeptools.utils.** { *; }
+-keep class com.turtlepaw.sunlight.utils.** { *; }

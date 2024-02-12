@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.turtlepaw.sleeptools"
+    namespace = "com.turtlepaw.sunlight"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.turtlepaw.sleeptools"
+        applicationId = "com.turtlepaw.sunlight"
         minSdk = 30
         targetSdk = 34
         versionCode = 1

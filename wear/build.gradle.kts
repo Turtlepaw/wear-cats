@@ -5,15 +5,15 @@ plugins {
 }
 
 android {
-    namespace = "com.turtlepaw.sleeptools"
+    namespace = "com.turtlepaw.sunlight"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.turtlepaw.sleeptools"
+        applicationId = "com.turtlepaw.sunlight"
         minSdk = 30
         targetSdk = 33
-        versionCode = 10
-        versionName = "1.1"
+        versionCode = 1
+        versionName = "1.0"
         vectorDrawables {
             useSupportLibrary = true
         }
