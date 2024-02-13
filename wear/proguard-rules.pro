@@ -1,7 +1,3 @@
-# Debug
--printusage ./usage.txt
--printseeds ./seeds.txt
-
 # Keep all classes in the application package
 -keep class com.turtlepaw.sunlight.** { *; }
 
@@ -13,11 +9,8 @@
 
 # Keep broadcast receivers
 -keep class com.turtlepaw.sunlight.services.** { *; }
--keep class com.turtlepaw.sunlight.services.Receiver { *; }
-# Bedtime Mode
--keep class com.turtlepaw.sunlight.services.BedtimeModeReceiver { *; }
-# Charging
--keep class com.turtlepaw.sunlight.services.ChargingReceiver { *; }
-
+-keep class com.turtlepaw.sunlight.services.BootReceiver { *; }
+# Light
+-keep class com.turtlepaw.sunlight.services.LightLoggerService { *; }
 # Keep utils
 -keep class com.turtlepaw.sunlight.utils.** { *; }

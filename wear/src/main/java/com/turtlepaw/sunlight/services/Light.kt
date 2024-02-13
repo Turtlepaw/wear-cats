@@ -8,11 +8,13 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.IBinder
 import android.util.Log
+import androidx.annotation.Keep
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import com.turtlepaw.sunlight.presentation.dataStore
-import com.turtlepaw.sunlight.utils.LightConfiguration
+import com.turtlepaw.sunlight.utils.Settings
+import com.turtlepaw.sunlight.utils.SettingsBasics
 import com.turtlepaw.sunlight.utils.SunlightViewModel
 import com.turtlepaw.sunlight.utils.SunlightViewModelFactory
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+@Keep
 class LightLoggerService : Service(), SensorEventListener, ViewModelStoreOwner {
     private var sensorManager: SensorManager? = null
     private var lightSensor: Sensor? = null
@@ -57,10 +60,18 @@ class LightLoggerService : Service(), SensorEventListener, ViewModelStoreOwner {
 
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type == Sensor.TYPE_LIGHT) {
+            val sharedPreferences = getSharedPreferences(
+                SettingsBasics.SHARED_PREFERENCES.getKey(),
+                SettingsBasics.SHARED_PREFERENCES.getMode()
+            )
+            val threshold = sharedPreferences.getInt(
+                Settings.SUN_THRESHOLD.getKey(),
+                Settings.SUN_THRESHOLD.getDefaultAsInt()
+            )
             val luminance = event.values[0]
             Log.d(TAG, "Received light: $luminance")
 
-            if (luminance >= LightConfiguration.LightThreshold) {
+            if (luminance >= threshold) {
                 CoroutineScope(Dispatchers.Default).launch {
                     Log.d(TAG, "Rewarding 1 minute")
                     sunlightViewModel.addMinute(LocalDate.now())

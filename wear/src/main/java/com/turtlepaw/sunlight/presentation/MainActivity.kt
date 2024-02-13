@@ -6,11 +6,12 @@
 
 package com.turtlepaw.sunlight.presentation
 
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -36,12 +37,12 @@ import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import androidx.wear.tooling.preview.devices.WearDevices
-import com.turtlepaw.sunlight.presentation.pages.GoalPicker
+import com.turtlepaw.sunlight.presentation.pages.StatePicker
 import com.turtlepaw.sunlight.presentation.pages.WearHome
 import com.turtlepaw.sunlight.presentation.pages.history.WearHistory
 import com.turtlepaw.sunlight.presentation.pages.settings.WearSettings
 import com.turtlepaw.sunlight.presentation.theme.SleepTheme
-import com.turtlepaw.sunlight.services.LightLoggerService
+import com.turtlepaw.sunlight.utils.LightConfiguration
 import com.turtlepaw.sunlight.utils.Settings
 import com.turtlepaw.sunlight.utils.SettingsBasics
 import com.turtlepaw.sunlight.utils.SunlightViewModel
@@ -53,7 +54,8 @@ import java.time.LocalDate
 enum class Routes(private val route: String) {
     HOME("/home"),
     SETTINGS("/settings"),
-    TIME_PICKER("/time-picker"),
+    GOAL_PICKER("/goal-picker"),
+    SUN_PICKER("/sun-picker"),
     HISTORY("/history");
 
     fun getRoute(query: String? = null): String {
@@ -66,9 +68,12 @@ enum class Routes(private val route: String) {
 // At the top level of your kotlin file:
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = SettingsBasics.HISTORY_STORAGE_BASE.getKey())
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), SensorEventListener {
     private lateinit var sunlightViewModelFactory: SunlightViewModelFactory
     private lateinit var sunlightViewModel: SunlightViewModel
+    private var sensorManager: SensorManager? = null
+    private var lightSensor: Sensor? = null
+    private var sunlightLx = mutableStateOf(0f)
     private val tag = "MainSleepActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,32 +93,24 @@ class MainActivity : ComponentActivity() {
         // Use the factory to create the BedtimeViewModel
         sunlightViewModel = ViewModelProvider(this, sunlightViewModelFactory)[SunlightViewModel::class.java]
 
-        val scheduler = getSystemService(ALARM_SERVICE) as AlarmManager
-        val intent = Intent(
-            this,
-            LightLoggerService::class.java
-        )
-        val scheduledIntent = PendingIntent.getService(
-            this,
-            0,
-            intent,
-            //PendingIntent.FLAG_UPDATE_CURRENT
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        // Initialize Sensor Manager
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager?
+        lightSensor = sensorManager!!.getDefaultSensor(Sensor.TYPE_LIGHT)
 
-        scheduler.setInexactRepeating(
-            AlarmManager.RTC_WAKEUP,
-            System.currentTimeMillis(),
-            60000, // 1m
-            scheduledIntent
+        // Register Sensor Listener
+        sensorManager!!.registerListener(
+            this,
+            lightSensor,
+            SensorManager.SENSOR_DELAY_NORMAL
         )
-
-        // Do an initial wake
-        Log.d(tag, "Starting light listener")
-        startService(intent)
 
         setContent {
-            WearPages(sharedPreferences, sunlightViewModel, this)
+            WearPages(
+                sharedPreferences,
+                sunlightViewModel,
+                this,
+                sunlightLx.value
+            )
         }
     }
 
@@ -131,8 +128,39 @@ class MainActivity : ComponentActivity() {
         sunlightViewModel = ViewModelProvider(this, sunlightViewModelFactory)[SunlightViewModel::class.java]
         Log.d(tag, "Database refreshed")
 
+        // Register Sensor Listener
+        sensorManager!!.registerListener(
+            this,
+            lightSensor,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+
         setContent {
-            WearPages(sharedPreferences, sunlightViewModel, this)
+            WearPages(
+                sharedPreferences,
+                sunlightViewModel,
+                this,
+                sunlightLx.value
+            )
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Unregister Sensor Listener to avoid memory leaks
+        sensorManager?.unregisterListener(this)
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
+        // Do nothing
+    }
+
+    override fun onSensorChanged(event: SensorEvent) {
+        Log.d(tag, "Received light change")
+        if (event.sensor.type == Sensor.TYPE_LIGHT) {
+            val luminance = event.values[0]
+            // Check if light intensity surpasses threshold
+            sunlightLx.value = luminance
         }
     }
 }
@@ -141,14 +169,17 @@ class MainActivity : ComponentActivity() {
 fun WearPages(
     sharedPreferences: SharedPreferences,
     sunlightViewModel: SunlightViewModel,
-    context: Context
+    context: Context,
+    sunlightLx: Float
 ){
     SleepTheme {
         // Creates a navigation controller for our pages
         val navController = rememberSwipeDismissableNavController()
         // Goal - the user's sun daily sun goal
-        val goalInt = sharedPreferences.getInt(Settings.GOAL.getKey(), Settings.GOAL.getDefaultAsInt()) // Default to on
+        val goalInt = sharedPreferences.getInt(Settings.GOAL.getKey(), Settings.GOAL.getDefaultAsInt())
+        val thresholdInt = sharedPreferences.getInt(Settings.SUN_THRESHOLD.getKey(), Settings.SUN_THRESHOLD.getDefaultAsInt())
         var goal by remember { mutableStateOf(goalInt) }
+        var threshold by remember { mutableStateOf(thresholdInt) }
         // Sunlight
         var sunlightHistory by remember { mutableStateOf<Set<Pair<LocalDate, Int>?>>(emptySet()) }
         var sunlightToday by remember { mutableStateOf<Int>(0) }
@@ -192,7 +223,9 @@ fun WearPages(
                             navController.navigate(route)
                         },
                         goal,
-                        30
+                        sunlightToday,
+                        sunlightLx,
+                        threshold
                     )
                 }
             }
@@ -201,19 +234,34 @@ fun WearPages(
                     navigate = { route ->
                         navController.navigate(route)
                     },
-                    openGoalPicker = {
-                      navController.navigate(Routes.TIME_PICKER.getRoute())
-                    },
-                    goal
+                    goal,
+                    threshold
                 )
             }
-            composable(Routes.TIME_PICKER.getRoute()){
-                GoalPicker(
-                    goal
+            composable(Routes.GOAL_PICKER.getRoute()){
+                StatePicker(
+                    List(60){
+                        it.plus(1)
+                    },
+                    goal,
                 ) { value ->
                     goal = value
                     val editor = sharedPreferences.edit()
                     editor.putInt(Settings.GOAL.getKey(), value)
+                    editor.apply()
+                    navController.popBackStack()
+                }
+            }
+            composable(Routes.SUN_PICKER.getRoute()){
+                StatePicker(
+                    List(10){
+                       it.times(1000)
+                    },
+                    threshold,
+                ) { value ->
+                    threshold = value
+                    val editor = sharedPreferences.edit()
+                    editor.putInt(Settings.SUN_THRESHOLD.getKey(), value)
                     editor.apply()
                     navController.popBackStack()
                 }
@@ -235,7 +283,9 @@ fun DefaultPreview() {
     WearHome(
         navigate = {},
         goal = Settings.GOAL.getDefaultAsInt(),
-        today = 30
+        today = 30,
+        5000f,
+        LightConfiguration.LightThreshold.plus(5f).toInt()
     )
 }
 
@@ -244,7 +294,7 @@ fun DefaultPreview() {
 fun SettingsPreview() {
     WearSettings(
         navigate = {},
-        openGoalPicker = {},
-        goal = Settings.GOAL.getDefaultAsInt()
+        goal = Settings.GOAL.getDefaultAsInt(),
+        sunlightThreshold = Settings.SUN_THRESHOLD.getDefaultAsInt()
     )
 }

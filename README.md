@@ -9,8 +9,8 @@
 
 ## Features
 
-- 🗓️ Discover how much sunlight you have per day and graph it
-
+- ☀️ Discover how much sunlight you have per day and graph it
+- 💡 Get rewarded with <kbd>☀️ Sun Minutes</kbd> and set a goal to reach
   </div>
   <div style="flex: 1;padding-left:100px;">
     <img src="./assets/watch.png" width="200" alt="Banner"/>

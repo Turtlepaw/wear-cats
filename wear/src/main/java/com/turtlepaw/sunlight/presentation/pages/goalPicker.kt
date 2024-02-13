@@ -30,16 +30,12 @@ import com.turtlepaw.sunlight.R
 
 @OptIn(ExperimentalHorologistApi::class)
 @Composable
-fun GoalPicker(
-    currentGoal: Int,
-    onSelectGoal: (Int) -> Unit
+fun StatePicker(
+    options: List<Int>,
+    currentState: Int,
+    onSelect: (Int) -> Unit
 ) {
-    var current = 0
-    val options = List(60){
-        current = current.plus(1)
-        return@List current
-    }
-    val initialIndex = options.indexOf(currentGoal)
+    val initialIndex = options.indexOf(currentState)
     val state = rememberPickerState(
         initialNumberOfOptions = options.size,
         initiallySelectedOption = if (initialIndex != -1) initialIndex else 0
@@ -81,7 +77,7 @@ fun GoalPicker(
         }
         Button(
             onClick = {
-                onSelectGoal(options[state.selectedOption])
+                onSelect(options[state.selectedOption])
             },
             colors = ButtonDefaults.secondaryButtonColors(),
             modifier = Modifier
@@ -114,6 +110,11 @@ fun GoalPicker(
 @Composable
 private fun PreviewRefreshIntervalPickerView() {
     CompositionLocalProvider {
-        GoalPicker(currentGoal = 10) {}
+        StatePicker(
+            currentState = 1,
+            options = List(60){
+                it.plus(1)
+            }
+        ) {}
     }
 }

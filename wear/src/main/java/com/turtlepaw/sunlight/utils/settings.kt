@@ -5,7 +5,8 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 enum class Settings(private val key: String, private val default: Any?) {
-    GOAL("goal", 15);
+    GOAL("goal", 15),
+    SUN_THRESHOLD("threshold", 5000);
 
     fun getKey(): String {
         return key

@@ -51,6 +51,8 @@ fun WearHome(
     navigate: (route: String) -> Unit,
     goal: Int,
     today: Int,
+    sunlightLx: Float,
+    threshold: Int
 ) {
     SleepTheme {
         val focusRequester = rememberActiveFocusRequester()
@@ -89,10 +91,18 @@ fun WearHome(
                     )
                 }
                 item {
-                    Text(
-                        text = "Sunlight today",
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
+                    if(sunlightLx >= threshold){
+                        Text(
+                            text = "Earning minutes!",
+                            modifier = Modifier.padding(bottom = 4.dp),
+                            color = MaterialTheme.colors.primary
+                        )
+                    } else {
+                        Text(
+                            text = "Sunlight today",
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
                 }
                 item {
                     Text(
@@ -193,6 +203,8 @@ fun DefaultPreview() {
     WearHome(
         navigate = {},
         Settings.GOAL.getDefaultAsInt(),
-        30
+        30,
+        5000f,
+        Settings.SUN_THRESHOLD.getDefaultAsInt()
     )
 }

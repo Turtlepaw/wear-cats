@@ -26,22 +26,21 @@ import androidx.wear.compose.material.scrollAway
 import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
+import com.turtlepaw.sunlight.presentation.Routes
 import com.turtlepaw.sunlight.presentation.components.ItemsListWithModifier
 import com.turtlepaw.sunlight.presentation.theme.SleepTheme
 import com.turtlepaw.sunlight.utils.Settings
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalWearFoundationApi::class, ExperimentalHorologistApi::class)
 @Composable
 fun WearSettings(
     navigate: (route: String) -> Unit,
-    openGoalPicker: () -> Unit,
-    goal: Int
+    goal: Int,
+    sunlightThreshold: Int
 ){
     SleepTheme {
         val focusRequester = rememberActiveFocusRequester()
         val scalingLazyListState = rememberScalingLazyListState()
-        val formatter = DateTimeFormatter.ofPattern("hh:mm a")
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -73,7 +72,7 @@ fun WearSettings(
                 item {
                     Button(
                         onClick = {
-                            openGoalPicker()
+                            navigate(Routes.GOAL_PICKER.getRoute())
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -84,6 +83,24 @@ fun WearSettings(
                     ) {
                         Text(
                             text = "${goal}m goal",
+                            color = Color.Black
+                        )
+                    }
+                }
+                item {
+                    Button(
+                        onClick = {
+                            navigate(Routes.SUN_PICKER.getRoute())
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = MaterialTheme.colors.primary
+                        )
+                    ) {
+                        Text(
+                            text = "$sunlightThreshold threshold",
                             color = Color.Black
                         )
                     }
@@ -109,7 +126,7 @@ fun WearSettings(
 fun SettingsPreview() {
     WearSettings(
         navigate = {},
-        openGoalPicker = {},
-        goal = Settings.GOAL.getDefaultAsInt()
+        goal = Settings.GOAL.getDefaultAsInt(),
+        sunlightThreshold = Settings.SUN_THRESHOLD.getDefaultAsInt()
     )
 }
