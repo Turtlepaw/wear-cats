@@ -5,6 +5,9 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.argb
 import androidx.wear.protolayout.DimensionBuilders.dp
@@ -30,9 +33,13 @@ import com.google.android.horologist.compose.tools.LayoutRootPreview
 import com.google.android.horologist.compose.tools.buildDeviceParameters
 import com.google.android.horologist.tiles.SuspendingTileService
 import com.turtlepaw.sunlight.R
+import com.turtlepaw.sunlight.presentation.dataStore
 import com.turtlepaw.sunlight.utils.Settings
 import com.turtlepaw.sunlight.utils.SettingsBasics
+import com.turtlepaw.sunlight.utils.SunlightViewModel
+import com.turtlepaw.sunlight.utils.SunlightViewModelFactory
 import com.turtlepaw.sunlight.utils.TimeManager
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
@@ -53,7 +60,9 @@ enum class Images(private val id: String) {
  * Skeleton for a tile with no images.
  */
 @OptIn(ExperimentalHorologistApi::class)
-class MainTileService : SuspendingTileService() {
+class MainTileService : SuspendingTileService(), ViewModelStoreOwner {
+    override val viewModelStore = ViewModelStore()
+
     override suspend fun resourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest
     ): ResourceBuilders.Resources {
@@ -83,9 +92,11 @@ class MainTileService : SuspendingTileService() {
             SettingsBasics.SHARED_PREFERENCES.getKey(),
             SettingsBasics.SHARED_PREFERENCES.getMode()
         )
+        val sunlightViewModel = ViewModelProvider(this, SunlightViewModelFactory(this.dataStore)).get(
+            SunlightViewModel::class.java)
         // Get preferences
         val goal = sharedPreferences.getInt(Settings.GOAL.getKey(), Settings.GOAL.getDefaultAsInt())
-        val today = 15
+        val today = sunlightViewModel.getDay(LocalDate.now())?.second ?: 0
 
         val singleTileTimeline = TimelineBuilders.Timeline.Builder().addTimelineEntry(
             TimelineBuilders.TimelineEntry.Builder().setLayout(

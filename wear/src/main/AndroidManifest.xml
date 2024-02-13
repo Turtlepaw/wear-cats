@@ -3,21 +3,22 @@
     <uses-feature android:name="android.hardware.type.watch" />
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
 
-    <!--    <uses-permission android:name="android.permission.WAKE_LOCK" />-->
-    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
+        android:name=".SunApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault">
         <meta-data android:name="com.google.android.wearable.standalone" android:value="true"/>
+        <!-- Light Service -->
         <service android:name=".services.LightLoggerService" />
-        <receiver android:name=".services.Receiver"
-            android:exported="true">
+        <!-- Boot receiver to start light alarm -->
+        <receiver android:name=".services.SensorReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
@@ -31,7 +32,7 @@
             android:name=".complication.MainComplicationService"
             android:exported="true"
             android:label="@string/complication_label"
-            android:icon="@drawable/sleep_white"
+            android:icon="@drawable/sunlight"
             android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
             <intent-filter>
                 <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />

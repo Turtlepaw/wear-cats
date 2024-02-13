@@ -8,5 +8,5 @@ object TileColors {
     val PrimaryColor = Colors.primary.toArgb()
     val LightText = android.graphics.Color.parseColor("#c5cecb")
     val White = Color.White.toArgb()
-    val TrackColor = Colors.secondary.toArgb()
+    val TrackColor = android.graphics.Color.parseColor("#303333")
 }

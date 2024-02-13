@@ -4,6 +4,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.graphics.drawable.Icon
 import android.util.Log
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.wear.watchface.complications.data.ComplicationData
 import androidx.wear.watchface.complications.data.ComplicationType
 import androidx.wear.watchface.complications.data.LongTextComplicationData
@@ -18,12 +21,16 @@ import androidx.wear.watchface.complications.data.SmallImageType
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
 import com.turtlepaw.sunlight.R
-import com.turtlepaw.sunlight.tile.DEFAULT_GOAL
+import com.turtlepaw.sunlight.presentation.dataStore
 import com.turtlepaw.sunlight.utils.Settings
 import com.turtlepaw.sunlight.utils.SettingsBasics
+import com.turtlepaw.sunlight.utils.SunlightViewModel
+import com.turtlepaw.sunlight.utils.SunlightViewModelFactory
+import java.time.LocalDate
 
 
-class MainComplicationService : SuspendingComplicationDataSourceService() {
+class MainComplicationService : SuspendingComplicationDataSourceService(), ViewModelStoreOwner {
+    override val viewModelStore = ViewModelStore()
     private val supportedComplicationTypes = arrayOf(
         ComplicationType.SHORT_TEXT,
         ComplicationType.LONG_TEXT,
@@ -35,6 +42,7 @@ class MainComplicationService : SuspendingComplicationDataSourceService() {
             return null
         }
         return createComplicationData(
+            30,
             30,
             "30m",
             "Sleep Prediction",
@@ -48,30 +56,34 @@ class MainComplicationService : SuspendingComplicationDataSourceService() {
             SettingsBasics.SHARED_PREFERENCES.getKey(),
             SettingsBasics.SHARED_PREFERENCES.getMode()
         )
-        // Get preferences
+        val sunlightViewModel = ViewModelProvider(this, SunlightViewModelFactory(this.dataStore)).get(
+            SunlightViewModel::class.java)
+        val today = sunlightViewModel.getDay(LocalDate.now())?.second ?: 0
         val goal = sharedPreferences.getInt(Settings.GOAL.getKey(), Settings.GOAL.getDefaultAsInt())
         return createComplicationData(
+            today,
             goal,
-            "${goal}m",
-            "Sleep Prediction",
+            "${today}m",
+            "Sunlight",
             request.complicationType,
             this
         )
     }
 
     private fun createComplicationData(
-        sleepTime: Int,
+        sunlightToday: Int,
+        goal: Int,
         text: String,
         contentDescription: String,
         type: ComplicationType,
         context: Context
     ): ComplicationData {
-        Log.d("SleepComplication", "Rendering complication...")
+        Log.d("SunComplication", "Rendering complication...")
         val monochromaticImage = MonochromaticImage.Builder(
-            Icon.createWithResource(context, R.drawable.sleep_white)
+            Icon.createWithResource(context, R.drawable.sunlight)
         ).build()
         val smallImage = SmallImage.Builder(
-            Icon.createWithResource(context, R.drawable.sleep_white),
+            Icon.createWithResource(context, R.drawable.sunlight),
             SmallImageType.ICON
         ).build()
 
@@ -103,8 +115,8 @@ class MainComplicationService : SuspendingComplicationDataSourceService() {
 
             ComplicationType.RANGED_VALUE -> RangedValueComplicationData.Builder(
                 min = 0f,
-                max = 24f,
-                value = sleepTime.toFloat() / DEFAULT_GOAL,
+                max = if(sunlightToday >= goal) sunlightToday.toFloat() else goal.toFloat(),
+                value = sunlightToday.toFloat(),
                 contentDescription = PlainComplicationText.Builder(contentDescription).build(),
             )
                 .setText(
@@ -143,6 +155,11 @@ class MainComplicationService : SuspendingComplicationDataSourceService() {
 
     private fun createActivityIntent(context: Context): PendingIntent {
         val intent = packageManager.getLaunchIntentForPackage(packageName)
-        return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        return PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
     }
 }

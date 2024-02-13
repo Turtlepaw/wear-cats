@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private var sensorManager: SensorManager? = null
     private var lightSensor: Sensor? = null
     private var sunlightLx = mutableStateOf(0f)
-    private val tag = "MainSleepActivity"
+    private val tag = "MainSunlightActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()

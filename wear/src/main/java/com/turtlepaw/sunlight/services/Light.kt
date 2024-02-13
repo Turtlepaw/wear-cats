@@ -35,7 +35,7 @@ class LightLoggerService : Service(), SensorEventListener, ViewModelStoreOwner {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "Listening for light changes")
+        Log.d(TAG, "Waiting for light changes")
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager?
         lightSensor = sensorManager!!.getDefaultSensor(Sensor.TYPE_LIGHT)
 //        val factory = SunlightViewModelFactory(this.dataStore)
@@ -76,7 +76,7 @@ class LightLoggerService : Service(), SensorEventListener, ViewModelStoreOwner {
                     Log.d(TAG, "Rewarding 1 minute")
                     sunlightViewModel.addMinute(LocalDate.now())
                 }
-            }
+            } else Log.d(TAG, "Not bright enough (target: $threshold)")
 
             // Clean up the sensor and service
             sensorManager!!.unregisterListener(this)
@@ -85,6 +85,6 @@ class LightLoggerService : Service(), SensorEventListener, ViewModelStoreOwner {
     }
 
     companion object {
-        private const val TAG = "com.turtlepaw.sunlight.services.LightLoggerService"
+        private const val TAG = "LightLoggerService"
     }
 }
