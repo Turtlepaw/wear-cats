@@ -9,7 +9,7 @@
 
 # Keep broadcast receivers
 -keep class com.turtlepaw.sunlight.services.** { *; }
--keep class com.turtlepaw.sunlight.services.BootReceiver { *; }
+-keep class com.turtlepaw.sunlight.services.SensorReceiver { *; }
 # Light
 -keep class com.turtlepaw.sunlight.services.LightLoggerService { *; }
 # Keep utils

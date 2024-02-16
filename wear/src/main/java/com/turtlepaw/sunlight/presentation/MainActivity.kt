@@ -20,10 +20,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -49,6 +49,7 @@ import com.turtlepaw.sunlight.utils.SunlightViewModel
 import com.turtlepaw.sunlight.utils.SunlightViewModelFactory
 import kotlinx.coroutines.delay
 import java.time.LocalDate
+import java.time.LocalTime
 
 
 enum class Routes(private val route: String) {
@@ -69,8 +70,9 @@ enum class Routes(private val route: String) {
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = SettingsBasics.HISTORY_STORAGE_BASE.getKey())
 
 class MainActivity : ComponentActivity(), SensorEventListener {
-    private lateinit var sunlightViewModelFactory: SunlightViewModelFactory
-    private lateinit var sunlightViewModel: SunlightViewModel
+    private lateinit var sunlightViewModelFactory: MutableState<SunlightViewModelFactory>
+    private lateinit var sunlightViewModel: MutableState<SunlightViewModel>
+    private var lastUpdated = mutableStateOf(LocalTime.now())
     private var sensorManager: SensorManager? = null
     private var lightSensor: Sensor? = null
     private var sunlightLx = mutableStateOf(0f)
@@ -88,10 +90,14 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         )
 
         // Initialize your BedtimeViewModelFactory here
-        sunlightViewModelFactory = SunlightViewModelFactory(dataStore)
+        sunlightViewModelFactory = mutableStateOf(
+            SunlightViewModelFactory(dataStore)
+        )
 
         // Use the factory to create the BedtimeViewModel
-        sunlightViewModel = ViewModelProvider(this, sunlightViewModelFactory)[SunlightViewModel::class.java]
+        sunlightViewModel = mutableStateOf(
+            ViewModelProvider(this, sunlightViewModelFactory.value)[SunlightViewModel::class.java]
+        )
 
         // Initialize Sensor Manager
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager?
@@ -107,7 +113,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         setContent {
             WearPages(
                 sharedPreferences,
-                sunlightViewModel,
+                sunlightViewModel.value,
                 this,
                 sunlightLx.value
             )
@@ -123,10 +129,19 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             SettingsBasics.SHARED_PREFERENCES.getMode()
         )
 
-        sunlightViewModelFactory = SunlightViewModelFactory(dataStore)
+        // Initialize your BedtimeViewModelFactory here
+        sunlightViewModelFactory = mutableStateOf(
+            SunlightViewModelFactory(dataStore)
+        )
 
-        sunlightViewModel = ViewModelProvider(this, sunlightViewModelFactory)[SunlightViewModel::class.java]
-        Log.d(tag, "Database refreshed")
+        // Use the factory to create the BedtimeViewModel
+        sunlightViewModel = mutableStateOf(
+            ViewModelProvider(this, sunlightViewModelFactory.value)[SunlightViewModel::class.java]
+        )
+
+        lastUpdated = mutableStateOf(
+            LocalTime.now()
+        )
 
         // Register Sensor Listener
         sensorManager!!.registerListener(
@@ -135,18 +150,17 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             SensorManager.SENSOR_DELAY_NORMAL
         )
 
-        setContent {
-            WearPages(
-                sharedPreferences,
-                sunlightViewModel,
-                this,
-                sunlightLx.value
-            )
-        }
+        Log.d(tag, "Database refreshed")
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        // Unregister Sensor Listener to avoid memory leaks
+        sensorManager?.unregisterListener(this)
+    }
+
+    override fun onPause() {
+        super.onPause()
         // Unregister Sensor Listener to avoid memory leaks
         sensorManager?.unregisterListener(this)
     }
@@ -185,7 +199,6 @@ fun WearPages(
         var sunlightToday by remember { mutableStateOf<Int>(0) }
         var loading by remember { mutableStateOf(true) }
         // Suspended functions
-        val coroutineScope = rememberCoroutineScope()
         LaunchedEffect(key1 = sunlightViewModel) {
             sunlightHistory = sunlightViewModel.getAllHistory()
             sunlightToday = sunlightViewModel.getDay(LocalDate.now())?.second ?: 0
@@ -243,6 +256,7 @@ fun WearPages(
                     List(60){
                         it.plus(1)
                     },
+                    unitOfMeasurement = "m",
                     goal,
                 ) { value ->
                     goal = value
@@ -257,6 +271,7 @@ fun WearPages(
                     List(10){
                        it.times(1000)
                     },
+                    unitOfMeasurement = "lx",
                     threshold,
                 ) { value ->
                     threshold = value

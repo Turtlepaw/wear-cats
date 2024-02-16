@@ -5,13 +5,18 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.annotation.Keep
+import com.turtlepaw.sunlight.utils.Settings
+import com.turtlepaw.sunlight.utils.SettingsBasics
+import java.time.LocalTime
+import java.time.format.DateTimeParseException
 import java.util.Calendar
 
 @Keep
 class SensorReceiver : BroadcastReceiver() {
-    private val tag = "BootReceiver"
+    private val tag = "SensorReceiver"
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
@@ -30,14 +35,11 @@ class SensorReceiver : BroadcastReceiver() {
             alarmIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        // Set your alarm schedule here
-        // For example, to trigger every 30 minutes:
-        val intervalMillis = 60 * 1000
-        val triggerAtMillis = System.currentTimeMillis() + intervalMillis
-        alarmManager.setInexactRepeating(
+
+        alarmManager.setRepeating(
             AlarmManager.RTC_WAKEUP,
             System.currentTimeMillis(),
-            60000,
+            60000, // every minute
             pendingIntent
         )
 
@@ -45,10 +47,26 @@ class SensorReceiver : BroadcastReceiver() {
         //scheduleTimeout(context)
 
         // Initial wake
-        context.startService(alarmIntent)
+        context.startForegroundService(alarmIntent)
     }
 
     private fun scheduleTimeout(context: Context) {
+        Log.d(tag, "Scheduling light timeout")
+        val sharedPreferences = context.getSharedPreferences(
+            SettingsBasics.SHARED_PREFERENCES.getKey(),
+            SettingsBasics.SHARED_PREFERENCES.getMode()
+        )
+
+        val timeout = sharedPreferences.getLocalTime(
+            Settings.TIMEOUT.getKey(),
+            Settings.TIMEOUT.getDefaultAsLocalTime()
+        )
+
+        val wakeUp = sharedPreferences.getLocalTime(
+            Settings.WAKEUP.getKey(),
+            Settings.WAKEUP.getDefaultAsLocalTime()
+        )
+
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val alarmIntent = Intent(context, TimeoutReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
@@ -62,9 +80,9 @@ class SensorReceiver : BroadcastReceiver() {
         val currentTime = System.currentTimeMillis()
         val calendar = Calendar.getInstance().apply {
             timeInMillis = currentTime
-            set(Calendar.HOUR_OF_DAY, 20) // 8:00 PM
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
+            set(Calendar.HOUR_OF_DAY, timeout.hour) // 8:00 PM
+            set(Calendar.MINUTE, timeout.minute)
+            set(Calendar.SECOND, timeout.second)
             if (timeInMillis <= currentTime) {
                 add(Calendar.DAY_OF_MONTH, 1) // Move to the next day if the current time has already passed 8:00 PM
             }
@@ -78,10 +96,11 @@ class SensorReceiver : BroadcastReceiver() {
             pendingIntent
         )
 
-        scheduleWakeup(context, 0)
+        scheduleWakeup(context, wakeUp)
     }
 
-    private fun scheduleWakeup(context: Context, time: Int){
+    private fun scheduleWakeup(context: Context, time: LocalTime){
+        Log.d(tag, "Scheduling wakeup")
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val alarmIntent = Intent(context, SensorReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
@@ -94,9 +113,9 @@ class SensorReceiver : BroadcastReceiver() {
         val currentTime = System.currentTimeMillis()
         val calendar = Calendar.getInstance().apply {
             timeInMillis = currentTime
-            set(Calendar.HOUR_OF_DAY, time)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
+            set(Calendar.HOUR_OF_DAY, time.hour)
+            set(Calendar.MINUTE, time.minute)
+            set(Calendar.SECOND, time.second)
             if (timeInMillis <= currentTime) {
                 add(Calendar.DAY_OF_MONTH, 1) // Move to the next day if the current time has already passed 8:00 PM
             }
@@ -109,5 +128,15 @@ class SensorReceiver : BroadcastReceiver() {
             triggerAtMillis,
             pendingIntent
         )
+    }
+}
+
+private fun SharedPreferences.getLocalTime(key: String, default: LocalTime): LocalTime {
+    val timeString = this.getString(key, null) ?: return default
+
+    return try {
+        LocalTime.parse(timeString)
+    } catch (e: DateTimeParseException) {
+        default
     }
 }

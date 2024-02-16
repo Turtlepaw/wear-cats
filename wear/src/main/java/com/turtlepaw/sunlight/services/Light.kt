@@ -1,5 +1,7 @@
 package com.turtlepaw.sunlight.services
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.hardware.Sensor
@@ -9,6 +11,8 @@ import android.hardware.SensorManager
 import android.os.IBinder
 import android.util.Log
 import androidx.annotation.Keep
+import androidx.core.app.NotificationCompat
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -22,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+
 @Keep
 class LightLoggerService : Service(), SensorEventListener, ViewModelStoreOwner {
     private var sensorManager: SensorManager? = null
@@ -31,6 +36,36 @@ class LightLoggerService : Service(), SensorEventListener, ViewModelStoreOwner {
 
     override fun onCreate() {
         super.onCreate()
+        val channel = NotificationChannel(
+            "sunlight",
+            "Sunlight",
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(
+            channel
+        )
+
+        val notification = NotificationCompat.Builder(this, "sunlight")
+            .setSmallIcon(
+                IconCompat.createFromIcon(
+                    this,
+                    android.graphics.drawable.Icon.createWithResource(
+                        this,
+                        com.turtlepaw.sunlight.R.drawable.sunlight,
+                    )
+                )!!
+            )
+            .setLargeIcon(
+                android.graphics.drawable.Icon.createWithResource(
+                    this,
+                    com.turtlepaw.sunlight.R.drawable.sunlight,
+                )
+            )
+            .setContentTitle("Listening for light")
+            .setContentText("Listening for changes in light from your device").build()
+
+        startForeground(1, notification)
         sunlightViewModel = ViewModelProvider(this, SunlightViewModelFactory(this.dataStore)).get(SunlightViewModel::class.java)
     }
 

@@ -31,6 +31,7 @@ import com.patrykandpatrick.vico.compose.chart.Chart
 import com.patrykandpatrick.vico.compose.chart.column.columnChart
 import com.patrykandpatrick.vico.core.axis.AxisPosition
 import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
+import com.patrykandpatrick.vico.core.chart.values.AxisValuesOverrider
 import com.patrykandpatrick.vico.core.component.shape.LineComponent
 import com.patrykandpatrick.vico.core.component.shape.Shapes
 import com.patrykandpatrick.vico.core.component.text.textComponent
@@ -43,7 +44,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.WeekFields
 import java.util.Locale
-import kotlin.math.abs
 
 @OptIn(ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class)
 @Composable
@@ -108,7 +108,7 @@ fun WearHistory(
                         if (date != null) {
                             Pair(
                                 false,
-                                entryOf(index.toFloat(), abs(date.second - goal))
+                                entryOf(index.toFloat(), date.second.toFloat())
                             )
                         } else {
                             Pair(
@@ -133,6 +133,9 @@ fun WearHistory(
                     item {
                         Chart(
                             chart = columnChart(
+                                axisValuesOverrider = AxisValuesOverrider.fixed(
+                                    maxY = goal.toFloat()
+                                ),
                                 spacing = 2.dp,
                                 columns = rawData.map { (_) ->
                                     LineComponent(

@@ -32,6 +32,7 @@ import com.turtlepaw.sunlight.R
 @Composable
 fun StatePicker(
     options: List<Int>,
+    unitOfMeasurement: String,
     currentState: Int,
     onSelect: (Int) -> Unit
 ) {
@@ -60,7 +61,7 @@ fun StatePicker(
                 .rotaryWithSnap(state.toRotaryScrollAdapter())
         ) {
             Text(
-                text = "${options[it]}m",
+                text = "${options[it]}$unitOfMeasurement",
                 style = with(LocalDensity.current) {
                     MaterialTheme.typography.display1.copy(
                         fontWeight = FontWeight.Medium,
@@ -112,6 +113,7 @@ private fun PreviewRefreshIntervalPickerView() {
     CompositionLocalProvider {
         StatePicker(
             currentState = 1,
+            unitOfMeasurement = "m",
             options = List(60){
                 it.plus(1)
             }

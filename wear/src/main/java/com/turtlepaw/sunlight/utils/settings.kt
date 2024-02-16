@@ -2,29 +2,41 @@ package com.turtlepaw.sunlight.utils
 
 import android.content.Context
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 
 enum class Settings(private val key: String, private val default: Any?) {
     GOAL("goal", 15),
-    SUN_THRESHOLD("threshold", 5000);
+    SUN_THRESHOLD("threshold", 5000),
+    TIMEOUT("timeout", LocalTime.of(20, 0)),
+    WAKEUP("wakeup", LocalTime.of(5, 0));
 
     fun getKey(): String {
         return key
     }
 
     fun getDefault(): String {
-        val formatter = DateTimeFormatter.ofPattern("hh:mm a")
         return when (default) {
             is String -> {
                 default
             }
 
+            else -> {
+                default.toString()
+            }
+        }
+    }
+
+    fun getDefaultAsLocalTime(): LocalTime {
+        return when (default) {
             is LocalTime -> {
-                formatter.format(default)
+                default
+            }
+
+            is String -> {
+                LocalTime.parse(default)
             }
 
             else -> {
-                default.toString()
+                LocalTime.of(10, 30)
             }
         }
     }

@@ -5,8 +5,12 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 
 class TimeoutReceiver : BroadcastReceiver() {
+    companion object {
+        private const val TAG = "TimeoutReceiver"
+    }
 
     override fun onReceive(context: Context, intent: Intent) {
         // Unregister or cancel the main alarm here
@@ -14,6 +18,7 @@ class TimeoutReceiver : BroadcastReceiver() {
     }
 
     private fun unregisterMainAlarm(context: Context) {
+        Log.d(TAG, "The timeout alarm has been executed, unregister light alarm receivers")
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val alarmIntent = Intent(context, LightLoggerService::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
