@@ -73,7 +73,7 @@ class SensorReceiver : BroadcastReceiver() {
             context,
             0,
             alarmIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         // Calculate the time until the next 8:00 PM
@@ -107,7 +107,7 @@ class SensorReceiver : BroadcastReceiver() {
             context,
             0,
             alarmIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val currentTime = System.currentTimeMillis()
