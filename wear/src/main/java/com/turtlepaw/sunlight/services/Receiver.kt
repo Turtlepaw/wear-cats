@@ -44,7 +44,7 @@ class SensorReceiver : BroadcastReceiver() {
         )
 
         // Save battery (experimental)
-        //scheduleTimeout(context)
+        scheduleTimeout(context)
 
         // Initial wake
         context.startForegroundService(alarmIntent)

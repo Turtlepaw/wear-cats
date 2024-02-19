@@ -42,6 +42,7 @@ import com.turtlepaw.sunlight.presentation.pages.WearHome
 import com.turtlepaw.sunlight.presentation.pages.history.WearHistory
 import com.turtlepaw.sunlight.presentation.pages.settings.WearSettings
 import com.turtlepaw.sunlight.presentation.theme.SleepTheme
+import com.turtlepaw.sunlight.services.SensorReceiver
 import com.turtlepaw.sunlight.utils.LightConfiguration
 import com.turtlepaw.sunlight.utils.Settings
 import com.turtlepaw.sunlight.utils.SettingsBasics
@@ -110,12 +111,18 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             SensorManager.SENSOR_DELAY_NORMAL
         )
 
+        val receiver = SensorReceiver()
+        // Start the alarm
+        Log.d(tag, "Starting sunlight alarm")
+        receiver.startAlarm(this)
+
         setContent {
             WearPages(
                 sharedPreferences,
                 sunlightViewModel.value,
                 this,
-                sunlightLx.value
+                sunlightLx.value,
+                lastUpdated
             )
         }
     }
@@ -184,7 +191,8 @@ fun WearPages(
     sharedPreferences: SharedPreferences,
     sunlightViewModel: SunlightViewModel,
     context: Context,
-    sunlightLx: Float
+    sunlightLx: Float,
+    lastUpdated: MutableState<LocalTime>
 ){
     SleepTheme {
         // Creates a navigation controller for our pages
@@ -199,7 +207,8 @@ fun WearPages(
         var sunlightToday by remember { mutableStateOf<Int>(0) }
         var loading by remember { mutableStateOf(true) }
         // Suspended functions
-        LaunchedEffect(key1 = sunlightViewModel) {
+        LaunchedEffect(key1 = sunlightViewModel, key2 = lastUpdated, key3 = lastUpdated.value) {
+            Log.d("LaunchedEffectSun", "Updating (${lastUpdated.value})")
             sunlightHistory = sunlightViewModel.getAllHistory()
             sunlightToday = sunlightViewModel.getDay(LocalDate.now())?.second ?: 0
             loading = false
