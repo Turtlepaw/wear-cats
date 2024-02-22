@@ -106,6 +106,24 @@ fun WearSettings(
                     }
                 }
                 item {
+                    Button(
+                        onClick = {
+                            navigate(Routes.CLOCKWORK.getRoute())
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = MaterialTheme.colors.primary
+                        )
+                    ) {
+                        Text(
+                            text = "Toolkit",
+                            color = Color.Black
+                        )
+                    }
+                }
+                item {
                     Text(
                         text = "This app is open-source",
                         color = Color.White,

@@ -26,28 +26,21 @@ class SensorReceiver : BroadcastReceiver() {
     }
 
     fun startAlarm(context: Context) {
-        Log.d(tag, "Starting alarm")
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val alarmIntent = Intent(context, LightLoggerService::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
+        Log.d(tag, "Sunlight alarm start confirmed")
+        val intent = Intent(context, LightWorker::class.java)
+        val pendingIntent = PendingIntent.getForegroundService(
             context,
             0,
-            alarmIntent,
+            intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        alarmManager.setRepeating(
-            AlarmManager.RTC_WAKEUP,
-            System.currentTimeMillis(),
-            60000, // every minute
-            pendingIntent
-        )
-
         // Save battery (experimental)
-        scheduleTimeout(context)
+        //scheduleTimeout(context)
 
-        // Initial wake
-        context.startForegroundService(alarmIntent)
+        // how do i start it?
+        pendingIntent.send()
+        //context.startForegroundService()
     }
 
     private fun scheduleTimeout(context: Context) {

@@ -37,6 +37,7 @@ import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import androidx.wear.tooling.preview.devices.WearDevices
+import com.turtlepaw.sunlight.presentation.pages.ClockworkToolkit
 import com.turtlepaw.sunlight.presentation.pages.StatePicker
 import com.turtlepaw.sunlight.presentation.pages.WearHome
 import com.turtlepaw.sunlight.presentation.pages.history.WearHistory
@@ -58,7 +59,8 @@ enum class Routes(private val route: String) {
     SETTINGS("/settings"),
     GOAL_PICKER("/goal-picker"),
     SUN_PICKER("/sun-picker"),
-    HISTORY("/history");
+    HISTORY("/history"),
+    CLOCKWORK("/clockwork-toolkit");
 
     fun getRoute(query: String? = null): String {
         return if(query != null){
@@ -130,12 +132,6 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     override fun onResume() {
         super.onResume()
         Log.d(tag, "Refreshing database...")
-        // Refresh the model
-        val sharedPreferences = getSharedPreferences(
-            SettingsBasics.SHARED_PREFERENCES.getKey(),
-            SettingsBasics.SHARED_PREFERENCES.getMode()
-        )
-
         // Initialize your BedtimeViewModelFactory here
         sunlightViewModelFactory = mutableStateOf(
             SunlightViewModelFactory(dataStore)
@@ -296,6 +292,9 @@ fun WearPages(
                     sunlightHistory,
                     loading
                 )
+            }
+            composable(Routes.CLOCKWORK.getRoute()){
+                ClockworkToolkit(light = sunlightLx, context = context)
             }
         }
     }
