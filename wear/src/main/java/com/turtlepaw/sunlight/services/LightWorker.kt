@@ -3,13 +3,16 @@ package com.turtlepaw.sunlight.services
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Handler
 import android.os.IBinder
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.Keep
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.IconCompat
@@ -37,6 +40,13 @@ class LightWorker : Service(), SensorEventListener, ViewModelStoreOwner {
     override val viewModelStore = ViewModelStore()
     private var timeInLight: Long = 0
     private val lastUpdated: LocalTime = LocalTime.now()
+    var context: Context = this
+    private lateinit var handler: Handler
+    private lateinit var runnable: Runnable
+
+    override fun onStart(intent: Intent?, startid: Int) {
+        Toast.makeText(this, "Service started by user.", Toast.LENGTH_LONG).show()
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -72,6 +82,17 @@ class LightWorker : Service(), SensorEventListener, ViewModelStoreOwner {
 
         startForeground(1, notification)
         sunlightViewModel = ViewModelProvider(this, SunlightViewModelFactory(this.dataStore)).get(SunlightViewModel::class.java)
+
+        Toast.makeText(this, "Service created!", Toast.LENGTH_LONG).show()
+
+        handler = Handler()
+        runnable = Runnable {
+            // handler to stop android
+            // from hibernating this service
+            handler.postDelayed(runnable, 10000)
+        }
+
+        handler.postDelayed(runnable, 15000)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -129,9 +150,12 @@ class LightWorker : Service(), SensorEventListener, ViewModelStoreOwner {
 
     override fun onDestroy() {
         super.onDestroy()
+        /* IF YOU WANT THIS SERVICE KILLED WITH THE APP THEN UNCOMMENT THE FOLLOWING LINE */
+        //handler.removeCallbacks(runnable);
+//        sensorManager!!.unregisterListener(this)
+//        stopSelf()
+        Toast.makeText(this, "Service stopped", Toast.LENGTH_LONG).show()
         // Clean up the sensor and service
-        sensorManager!!.unregisterListener(this)
-        stopSelf()
     }
 
     companion object {

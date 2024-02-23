@@ -18,6 +18,7 @@
         <meta-data android:name="com.google.android.wearable.standalone" android:value="true"/>
         <!-- Light Service -->
         <service android:name=".services.LightLoggerService" />
+        <service android:name=".services.LightWorker" />
         <!-- Boot receiver to start light alarm -->
         <receiver android:name=".services.SensorReceiver" android:exported="true">
             <intent-filter>

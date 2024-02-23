@@ -21,10 +21,13 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.core.DataStore
@@ -51,7 +54,6 @@ import com.turtlepaw.sunlight.utils.SunlightViewModel
 import com.turtlepaw.sunlight.utils.SunlightViewModelFactory
 import kotlinx.coroutines.delay
 import java.time.LocalDate
-import java.time.LocalTime
 
 
 enum class Routes(private val route: String) {
@@ -75,7 +77,6 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = Set
 class MainActivity : ComponentActivity(), SensorEventListener {
     private lateinit var sunlightViewModelFactory: MutableState<SunlightViewModelFactory>
     private lateinit var sunlightViewModel: MutableState<SunlightViewModel>
-    private var lastUpdated = mutableStateOf(LocalTime.now())
     private var sensorManager: SensorManager? = null
     private var lightSensor: Sensor? = null
     private var sunlightLx = mutableStateOf(0f)
@@ -123,28 +124,13 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                 sharedPreferences,
                 sunlightViewModel.value,
                 this,
-                sunlightLx.value,
-                lastUpdated
+                sunlightLx.value
             )
         }
     }
 
     override fun onResume() {
         super.onResume()
-        Log.d(tag, "Refreshing database...")
-        // Initialize your BedtimeViewModelFactory here
-        sunlightViewModelFactory = mutableStateOf(
-            SunlightViewModelFactory(dataStore)
-        )
-
-        // Use the factory to create the BedtimeViewModel
-        sunlightViewModel = mutableStateOf(
-            ViewModelProvider(this, sunlightViewModelFactory.value)[SunlightViewModel::class.java]
-        )
-
-        lastUpdated = mutableStateOf(
-            LocalTime.now()
-        )
 
         // Register Sensor Listener
         sensorManager!!.registerListener(
@@ -152,8 +138,6 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             lightSensor,
             SensorManager.SENSOR_DELAY_NORMAL
         )
-
-        Log.d(tag, "Database refreshed")
     }
 
     override fun onDestroy() {
@@ -187,8 +171,7 @@ fun WearPages(
     sharedPreferences: SharedPreferences,
     sunlightViewModel: SunlightViewModel,
     context: Context,
-    sunlightLx: Float,
-    lastUpdated: MutableState<LocalTime>
+    sunlightLx: Float
 ){
     SleepTheme {
         // Creates a navigation controller for our pages
@@ -196,15 +179,17 @@ fun WearPages(
         // Goal - the user's sun daily sun goal
         val goalInt = sharedPreferences.getInt(Settings.GOAL.getKey(), Settings.GOAL.getDefaultAsInt())
         val thresholdInt = sharedPreferences.getInt(Settings.SUN_THRESHOLD.getKey(), Settings.SUN_THRESHOLD.getDefaultAsInt())
-        var goal by remember { mutableStateOf(goalInt) }
-        var threshold by remember { mutableStateOf(thresholdInt) }
+        var goal by remember { mutableIntStateOf(goalInt) }
+        var threshold by remember { mutableIntStateOf(thresholdInt) }
         // Sunlight
         var sunlightHistory by remember { mutableStateOf<Set<Pair<LocalDate, Int>?>>(emptySet()) }
-        var sunlightToday by remember { mutableStateOf<Int>(0) }
+        var sunlightToday by remember { mutableIntStateOf(0) }
         var loading by remember { mutableStateOf(true) }
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val state by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
         // Suspended functions
-        LaunchedEffect(key1 = sunlightViewModel, key2 = lastUpdated, key3 = lastUpdated.value) {
-            Log.d("LaunchedEffectSun", "Updating (${lastUpdated.value})")
+        LaunchedEffect(state) {
+            Log.d("SunlightLifecycle", "Lifecycle state updated: $state (${state.name})")
             sunlightHistory = sunlightViewModel.getAllHistory()
             sunlightToday = sunlightViewModel.getDay(LocalDate.now())?.second ?: 0
             loading = false
