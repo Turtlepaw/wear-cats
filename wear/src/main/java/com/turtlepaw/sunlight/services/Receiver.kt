@@ -27,19 +27,16 @@ class SensorReceiver : BroadcastReceiver() {
 
     fun startAlarm(context: Context) {
         Log.d(tag, "Sunlight alarm start confirmed")
-        val intent = Intent(context, LightWorker::class.java)
-        val pendingIntent = PendingIntent.getForegroundService(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
 
         // Save battery (experimental)
-        scheduleTimeout(context)
+        // # Dev Note: why we disabled this? #
+        // we'll have to figure out something for
+        // this since we can't start services in the background
+        // and battery isn't great with it always on
+        //scheduleTimeout(context)
 
+        // Start service
         context.startService(Intent(context, LightWorker::class.java))
-        //context.startForegroundService()
     }
 
     private fun scheduleTimeout(context: Context) {
@@ -75,9 +72,9 @@ class SensorReceiver : BroadcastReceiver() {
             set(Calendar.HOUR_OF_DAY, timeout.hour) // 8:00 PM
             set(Calendar.MINUTE, timeout.minute)
             set(Calendar.SECOND, timeout.second)
-            if (timeInMillis <= currentTime) {
-                add(Calendar.DAY_OF_MONTH, 1) // Move to the next day if the current time has already passed 8:00 PM
-            }
+//            if (timeInMillis <= currentTime) {
+//                add(Calendar.DAY_OF_MONTH, 1) // Move to the next day if the current time has already passed 8:00 PM
+//            }
         }
         val triggerAtMillis = calendar.timeInMillis
 
