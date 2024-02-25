@@ -36,7 +36,7 @@ class SensorReceiver : BroadcastReceiver() {
         )
 
         // Save battery (experimental)
-        //scheduleTimeout(context)
+        scheduleTimeout(context)
 
         context.startService(Intent(context, LightWorker::class.java))
         //context.startForegroundService()

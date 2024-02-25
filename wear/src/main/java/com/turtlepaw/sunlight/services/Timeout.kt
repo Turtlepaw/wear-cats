@@ -17,14 +17,9 @@ class TimeoutReceiver : BroadcastReceiver() {
         unregisterMainAlarm(context)
     }
 
-    private fun getIntent(context: Context): Intent {
-        return Intent(context, LightWorker::class.java)
-    }
-
     private fun unregisterMainAlarm(context: Context) {
         Log.d(TAG, "The timeout alarm has been executed, unregister light alarm receivers")
-        val intent = getIntent(context)
-        context.stopService(intent)
+        context.stopService(Intent(context, LightWorker::class.java))
         // old with alarm
 //        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 //        val alarmIntent = Intent(context, LightLoggerService::class.java)
