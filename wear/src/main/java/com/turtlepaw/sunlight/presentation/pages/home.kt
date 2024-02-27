@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -181,17 +180,17 @@ fun WearHome(
                     }
 
                 }
-                item {
-                    Text(
-                        text = "Made with ☀️ by turtlepaw",
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .padding(
-                                top = 10.dp
-                            )
-                    )
-                }
+//                item {
+//                    Text(
+//                        text = "Made with ☀️ by turtlepaw",
+//                        color = Color.White,
+//                        textAlign = TextAlign.Center,
+//                        modifier = Modifier
+//                            .padding(
+//                                top = 10.dp
+//                            )
+//                    )
+//                }
             }
         }
     }
