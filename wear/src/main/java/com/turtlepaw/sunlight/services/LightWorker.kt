@@ -3,8 +3,10 @@ package com.turtlepaw.sunlight.services
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -38,11 +40,29 @@ class LightWorker : Service(), SensorEventListener, ViewModelStoreOwner {
     private var lightSensor: Sensor? = null
     private lateinit var sunlightViewModel: SunlightViewModel
     override val viewModelStore = ViewModelStore()
-    private var timeInLight: Long = 0
-    private val lastUpdated: LocalTime = LocalTime.now()
+    private var timeInLight: Int = 0
+    private var lastUpdated: LocalTime = LocalTime.now()
+    private var threshold: Int? = null
     var context: Context = this
     private lateinit var handler: Handler
     private lateinit var runnable: Runnable
+    private val thresholdReceiver = ThresholdReceiver()
+
+    // Shared Preferences Listener
+    inner class ThresholdReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            Log.d(TAG, "Received new light threshold")
+            val defaultThreshold = Settings.SUN_THRESHOLD.getDefaultAsInt()
+            // Update threshold value when received a broadcast
+            val threshold = intent?.getIntExtra("threshold", defaultThreshold) ?: defaultThreshold
+            updateThreshold(threshold)
+        }
+    }
+
+    fun updateThreshold(newThreshold: Int) {
+        threshold = newThreshold
+        Log.d(TAG, "Threshold updated")
+    }
 
     override fun onStart(intent: Intent?, startid: Int) {
         Toast.makeText(this, "Service started by user.", Toast.LENGTH_LONG).show()
@@ -83,12 +103,16 @@ class LightWorker : Service(), SensorEventListener, ViewModelStoreOwner {
         startForeground(1, notification)
         sunlightViewModel = ViewModelProvider(this, SunlightViewModelFactory(this.dataStore)).get(SunlightViewModel::class.java)
 
+        val filter = IntentFilter("${packageName}.THRESHOLD_UPDATED")
+        registerReceiver(thresholdReceiver, filter)
+
         Toast.makeText(this, "Service created!", Toast.LENGTH_LONG).show()
 
         handler = Handler()
         runnable = Runnable {
             // handler to stop android
             // from hibernating this service
+            Log.v(TAG, "Service still running")
             handler.postDelayed(runnable, 10000)
         }
 
@@ -99,6 +123,14 @@ class LightWorker : Service(), SensorEventListener, ViewModelStoreOwner {
         Log.d(TAG, "Waiting for light changes")
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager?
         lightSensor = sensorManager!!.getDefaultSensor(Sensor.TYPE_LIGHT)
+        val sharedPreferences = getSharedPreferences(
+            SettingsBasics.SHARED_PREFERENCES.getKey(),
+            SettingsBasics.SHARED_PREFERENCES.getMode()
+        )
+        threshold = sharedPreferences.getInt(
+            Settings.SUN_THRESHOLD.getKey(),
+            Settings.SUN_THRESHOLD.getDefaultAsInt()
+        )
 //        val factory = SunlightViewModelFactory(this.dataStore)
 //        sunlightViewModel = ViewModelProvider(
 //            applicationContext as ViewModelStoreOwner,
@@ -121,29 +153,26 @@ class LightWorker : Service(), SensorEventListener, ViewModelStoreOwner {
 
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type == Sensor.TYPE_LIGHT) {
-            val sharedPreferences = getSharedPreferences(
-                SettingsBasics.SHARED_PREFERENCES.getKey(),
-                SettingsBasics.SHARED_PREFERENCES.getMode()
-            )
-            val threshold = sharedPreferences.getInt(
-                Settings.SUN_THRESHOLD.getKey(),
-                Settings.SUN_THRESHOLD.getDefaultAsInt()
-            )
             val luminance = event.values[0]
             Log.d(TAG, "Received light: $luminance")
 
-            if (luminance >= threshold) {
-                val timeSinceLastUpdate = Duration.between(lastUpdated, LocalTime.now())
-                timeInLight += timeSinceLastUpdate.toMillis()
+            if (threshold != null && luminance >= (threshold ?: 0)) {
+                val currentTime = LocalTime.now()
+                val timeSinceLastUpdate = Duration.between(lastUpdated, currentTime).toMillis()
+                timeInLight += timeSinceLastUpdate.toInt()
                 // Backwards compatible
-                if (timeInLight == 60000L) {
+                if (timeInLight >= 60000) {
                     CoroutineScope(Dispatchers.Default).launch {
                         Log.d(TAG, "Rewarding 1 minute")
-                        sunlightViewModel.addMinute(LocalDate.now())
+                        sunlightViewModel.add(LocalDate.now(), (timeInLight / 1000 / 60).toInt())
                         timeInLight = 0
                     }
                 }
-            } else Log.d(TAG, "Not bright enough (target: $threshold)")
+                lastUpdated = currentTime
+            } else {
+                Log.d(TAG, "Not bright enough (target: $threshold)")
+                lastUpdated = LocalTime.now() // Update lastUpdated even if not bright enough
+            }
         }
     }
 

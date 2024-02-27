@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="wear">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-02-22T02:31:27.089434Z">
+        <DropdownSelection timestamp="2024-02-27T02:09:08.357651900Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\olivi\.android\avd\Pixel_Watch_virtual_.avd" />
+              <DeviceId pluginId="Default" identifier="serial=10.0.0.194:41043;connection=52cc396a" />
             </handle>
           </Target>
         </DropdownSelection>

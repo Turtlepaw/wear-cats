@@ -43,6 +43,18 @@ class SunlightViewModel(private val dataStore: DataStore<Preferences>) : ViewMod
         }
     }
 
+    suspend fun add(date: LocalDate, time: Int){
+        val day = getDay(date)
+        val minutes = (day?.second ?: 0).plus(time)
+        if(day == null) startDay()
+        dataStore.edit { preferences ->
+            val history = (preferences[SUNLIGHT_HISTORY_KEY] ?: mutableSetOf()).toMutableSet()
+            history.removeIf { it.startsWith(date.toString()) }
+            history.add("$date - $minutes")
+            preferences[SUNLIGHT_HISTORY_KEY] = history
+        }
+    }
+
     private fun parseEntry(str: String): Pair<LocalDate, Int>? {
         val split = str.split(" - ")
         if (split.size != 2) {

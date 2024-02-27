@@ -7,6 +7,7 @@
 package com.turtlepaw.sunlight.presentation
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -200,7 +201,7 @@ fun WearPages(
             // Use a coroutine to run the code on the main thread
             while (true) {
                 // Delay until the next minute
-                delay(65_000 - (System.currentTimeMillis() % 65_000))
+                delay(15_000 - (System.currentTimeMillis() % 15_000))
 
                 // Update the current sunlight
                 val today = sunlightViewModel.getDay(LocalDate.now())
@@ -259,7 +260,7 @@ fun WearPages(
             composable(Routes.SUN_PICKER.getRoute()){
                 StatePicker(
                     List(10){
-                       it.times(1000)
+                       it.times(1000).plus(1000)
                     },
                     unitOfMeasurement = "lx",
                     threshold,
@@ -268,6 +269,11 @@ fun WearPages(
                     val editor = sharedPreferences.edit()
                     editor.putInt(Settings.SUN_THRESHOLD.getKey(), value)
                     editor.apply()
+                    // Send the broadcast
+                    val intent = Intent("${context.packageName}.THRESHOLD_UPDATED").apply {
+                        putExtra("threshold", value)
+                    }
+                    context.sendBroadcast(intent)
                     navController.popBackStack()
                 }
             }

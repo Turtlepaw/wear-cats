@@ -25,6 +25,7 @@ import androidx.wear.protolayout.material.ProgressIndicatorColors
 import androidx.wear.protolayout.material.Text
 import androidx.wear.protolayout.material.Typography
 import androidx.wear.protolayout.material.layouts.EdgeContentLayout
+import androidx.wear.tiles.EventBuilders
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tooling.preview.devices.WearDevices
@@ -39,6 +40,10 @@ import com.turtlepaw.sunlight.utils.SettingsBasics
 import com.turtlepaw.sunlight.utils.SunlightViewModel
 import com.turtlepaw.sunlight.utils.SunlightViewModelFactory
 import com.turtlepaw.sunlight.utils.TimeManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -62,6 +67,12 @@ enum class Images(private val id: String) {
 @OptIn(ExperimentalHorologistApi::class)
 class MainTileService : SuspendingTileService(), ViewModelStoreOwner {
     override val viewModelStore = ViewModelStore()
+    private val serviceJob = Job()
+    private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
+
+    companion object {
+        private const val TAG = "MainTileService"
+    }
 
     override suspend fun resourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest
@@ -140,6 +151,16 @@ class MainTileService : SuspendingTileService(), ViewModelStoreOwner {
                 60000 * 5
             )
             .build()
+    }
+
+    override fun onTileEnterEvent(requestParams: EventBuilders.TileEnterEvent) {
+        serviceScope.launch {
+            try {
+                getUpdater(this@MainTileService).requestUpdate(MainTileService::class.java)
+            } catch (e: Exception) {
+                Log.w(TAG, "Unable to request tile update on enter", e)
+            }
+        }
     }
 }
 
