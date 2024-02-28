@@ -47,6 +47,8 @@ class LightWorker : Service(), SensorEventListener, ViewModelStoreOwner {
     private lateinit var handler: Handler
     private lateinit var runnable: Runnable
     private val thresholdReceiver = ThresholdReceiver()
+    private val shutdownReceiver = ShutdownReceiver()
+    private val wakeupReceiver = WakeupReceiver()
 
     // Shared Preferences Listener
     inner class ThresholdReceiver : BroadcastReceiver() {
@@ -59,9 +61,41 @@ class LightWorker : Service(), SensorEventListener, ViewModelStoreOwner {
         }
     }
 
+    inner class ShutdownReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            Log.d(TAG, "Received shutdown command")
+            onShutdown()
+        }
+    }
+
+    inner class WakeupReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            Log.d(TAG, "Received wakeup command")
+            onWakeup()
+        }
+    }
+
     fun updateThreshold(newThreshold: Int) {
         threshold = newThreshold
         Log.d(TAG, "Threshold updated")
+    }
+
+    fun onShutdown() {
+        Log.d(TAG, "Shutting down...")
+        unregisterReceiver(shutdownReceiver)
+        handler.removeCallbacks(runnable)
+        sensorManager!!.unregisterListener(this)
+    }
+
+    fun onWakeup() {
+        Log.d(TAG, "Waking up...")
+        val shutDownFilter = IntentFilter("${packageName}.SHUTDOWN_WORKER")
+        registerReceiver(shutdownReceiver, shutDownFilter)
+        sensorManager!!.registerListener(
+            this, lightSensor,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+        handler.postDelayed(runnable, 15000)
     }
 
     override fun onStart(intent: Intent?, startid: Int) {
@@ -103,8 +137,12 @@ class LightWorker : Service(), SensorEventListener, ViewModelStoreOwner {
         startForeground(1, notification)
         sunlightViewModel = ViewModelProvider(this, SunlightViewModelFactory(this.dataStore)).get(SunlightViewModel::class.java)
 
-        val filter = IntentFilter("${packageName}.THRESHOLD_UPDATED")
-        registerReceiver(thresholdReceiver, filter)
+        val thresholdFilter = IntentFilter("${packageName}.THRESHOLD_UPDATED")
+        registerReceiver(thresholdReceiver, thresholdFilter)
+        val shutDownFilter = IntentFilter("${packageName}.SHUTDOWN_WORKER")
+        registerReceiver(shutdownReceiver, shutDownFilter)
+        val wakeupFilter = IntentFilter("${packageName}.WAKEUP_WORKER")
+        registerReceiver(wakeupReceiver, wakeupFilter)
 
         Toast.makeText(this, "Service created!", Toast.LENGTH_LONG).show()
 

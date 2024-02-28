@@ -1,10 +1,17 @@
 package com.turtlepaw.sunlight.services
 
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.annotation.Keep
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Keep
 class TimeoutReceiver : BroadcastReceiver() {
@@ -13,25 +20,46 @@ class TimeoutReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        // Unregister or cancel the main alarm here
-        unregisterMainAlarm(context)
+        if(intent.action == NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED){
+            runBedtime(context, intent)
+        }
     }
 
-    private fun unregisterMainAlarm(context: Context) {
-        Log.d(TAG, "The timeout alarm has been executed, unregister light alarm receivers")
-        context.stopService(Intent(context, LightWorker::class.java))
-        // old with alarm
-//        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-//        val alarmIntent = Intent(context, LightLoggerService::class.java)
-//        val pendingIntent = PendingIntent.getBroadcast(
-//            context,
-//            0,
-//            alarmIntent,
-//            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE // Use FLAG_NO_CREATE to get existing PendingIntent or null if it doesn't exist
-//        )
-//        pendingIntent?.let {
-//            alarmManager.cancel(it) // Cancel the main alarm if it exists
-//            it.cancel() // Cancel the PendingIntent
-//        }
+    private fun getBedtimeState(context: Context): Boolean {
+        return try {
+            Settings.Global.getInt(context.contentResolver, if (Build.MANUFACTURER == "samsung") "setting_bedtime_mode_running_state" else "bedtime_mode") == 1
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update bedtime mode sensor", e)
+            false
+        }
+    }
+
+    private fun runBedtime(context: Context, intent: Intent) {
+        Log.d(TAG, "Received bedtime mode change... ($intent)")
+
+        CoroutineScope(Dispatchers.Default).launch {
+            // wait for globals to update
+            delay(500)
+            val state = getBedtimeState(context)
+            if(state){
+                try {
+                    //context.stopService(Intent(context, LightWorker::class.java))
+                    context.sendBroadcast(
+                        Intent("${context.packageName}.SHUTDOWN_WORKER")
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to stop light worker", e)
+                }
+            } else {
+                try {
+//                    context.startForegroundService(Intent(context, LightWorker::class.java))
+                    context.sendBroadcast(
+                        Intent("${context.packageName}.WAKEUP_WORKER")
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to start light worker", e)
+                }
+            }
+        }
     }
 }

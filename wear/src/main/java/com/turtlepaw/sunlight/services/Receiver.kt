@@ -36,7 +36,7 @@ class SensorReceiver : BroadcastReceiver() {
         //scheduleTimeout(context)
 
         // Start service
-        context.startService(Intent(context, LightWorker::class.java))
+        context.startForegroundService(Intent(context, LightWorker::class.java))
     }
 
     private fun scheduleTimeout(context: Context) {
