@@ -7,7 +7,8 @@ enum class Settings(private val key: String, private val default: Any?) {
     GOAL("goal", 15),
     SUN_THRESHOLD("threshold", 5000),
     TIMEOUT("timeout", LocalTime.of(20, 0)),
-    WAKEUP("wakeup", LocalTime.of(5, 0));
+    WAKEUP("wakeup", LocalTime.of(5, 0)),
+    BATTERY_SAVER("battery_saver", true);
 
     fun getKey(): String {
         return key
@@ -21,6 +22,18 @@ enum class Settings(private val key: String, private val default: Any?) {
 
             else -> {
                 default.toString()
+            }
+        }
+    }
+
+    fun getDefaultAsBoolean(): Boolean {
+        return when (default) {
+            is Boolean -> {
+                default
+            }
+
+            else -> {
+                false
             }
         }
     }

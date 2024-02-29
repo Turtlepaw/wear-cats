@@ -185,6 +185,12 @@ fun WearPages(
         // Sunlight
         var sunlightHistory by remember { mutableStateOf<Set<Pair<LocalDate, Int>?>>(emptySet()) }
         var sunlightToday by remember { mutableIntStateOf(0) }
+        // Battery Saver
+        val isBatterySaverRaw = sharedPreferences.getBoolean(
+            Settings.BATTERY_SAVER.getKey(),
+            Settings.BATTERY_SAVER.getDefaultAsBoolean()
+        )
+        var isBatterySaver by remember { mutableStateOf(isBatterySaverRaw) }
         var loading by remember { mutableStateOf(true) }
         val lifecycleOwner = LocalLifecycleOwner.current
         val state by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
@@ -239,8 +245,14 @@ fun WearPages(
                         navController.navigate(route)
                     },
                     goal,
-                    threshold
-                )
+                    threshold,
+                    isBatterySaver
+                ){ value ->
+                    isBatterySaver = value
+                    val editor = sharedPreferences.edit()
+                    editor.putBoolean(Settings.BATTERY_SAVER.getKey(), value)
+                    editor.apply()
+                }
             }
             composable(Routes.GOAL_PICKER.getRoute()){
                 StatePicker(
@@ -309,6 +321,8 @@ fun SettingsPreview() {
     WearSettings(
         navigate = {},
         goal = Settings.GOAL.getDefaultAsInt(),
-        sunlightThreshold = Settings.SUN_THRESHOLD.getDefaultAsInt()
+        sunlightThreshold = Settings.SUN_THRESHOLD.getDefaultAsInt(),
+        true,
+        {}
     )
 }
