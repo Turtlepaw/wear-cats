@@ -9,38 +9,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
-        android:name=".SunApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault">
         <meta-data android:name="com.google.android.wearable.standalone" android:value="true"/>
-        <!-- Light Service -->
-        <service android:name=".services.LightLoggerService" />
-        <service android:name=".services.LightWorker" />
-        <!-- Boot receiver to start light alarm -->
-        <receiver android:name=".services.SensorReceiver" android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                <action android:name="android.intent.action.MY_PACKAGE_SUSPENDED" />
-                <action android:name="android.intent.action.MY_PACKAGE_UNSUSPENDED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
-            </intent-filter>
-        </receiver>
-        <receiver android:name=".services.TimeoutReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                <action android:name="android.intent.action.MY_PACKAGE_SUSPENDED" />
-                <action android:name="android.intent.action.MY_PACKAGE_UNSUSPENDED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
-            </intent-filter>
-        </receiver>
         <service
             android:name=".complication.MainComplicationService"
             android:exported="true"

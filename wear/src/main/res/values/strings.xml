@@ -1,10 +1,10 @@
 <resources>
-    <string name="app_name">Sunlight</string>
+    <string name="app_name">Cats</string>
     <!--
     This string is used for square devices and overridden by hello_world in
     values-round/strings.xml for round devices.
     -->
     <string name="hello_world">From the Square world,\nHello, %1$s!</string>
-    <string name="tile_label">Sunlight Today</string>
-    <string name="complication_label">Sunlight Today</string>
+    <string name="tile_label">Daily Cat</string>
+    <string name="complication_label">Cats</string>
 </resources>

@@ -2,14 +2,15 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
+    kotlin("plugin.serialization") version "1.9.22"
 }
 
 android {
-    namespace = "com.turtlepaw.sunlight"
+    namespace = "com.turtlepaw.cats"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.turtlepaw.sunlight"
+        applicationId = "com.turtlepaw.cats"
         minSdk = 30
         targetSdk = 33
         versionCode = 1
@@ -75,6 +76,8 @@ dependencies {
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
     implementation(libs.vico.core)
+    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
