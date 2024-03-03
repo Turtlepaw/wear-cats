@@ -1,5 +1,6 @@
 package com.turtlepaw.cats.presentation.pages
 
+import android.graphics.drawable.shapes.Shape
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
@@ -35,6 +38,7 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PositionIndicator
+import androidx.wear.compose.material.Shapes
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.Vignette
@@ -47,6 +51,7 @@ import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.cats.presentation.components.ItemsListWithModifier
 import com.turtlepaw.cats.presentation.theme.SleepTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
@@ -57,6 +62,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.LocalDate
 
 @Serializable
 data class CatPhoto(
@@ -70,6 +76,22 @@ data class CatPhoto(
     val height: Int
 )
 
+private const val tag = "CatImageFetch"
+
+suspend fun safelyFetch(onSuccess: (data: List<CatPhoto>) -> Unit){
+    Log.d(tag, "Fetching images...")
+    try {
+        val photos = fetchPhotos()
+        onSuccess(photos)
+    } catch (e: Exception) {
+        // Handle error
+        Log.e(tag, "Failed to fetch photos: $e")
+        delay(5000)
+        // Auto Retry
+        safelyFetch(onSuccess)
+    }
+}
+
 @OptIn(ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class)
 @Composable
 fun WearHome() {
@@ -79,17 +101,29 @@ fun WearHome() {
         // Use remember to store the result and trigger recomposition when it changes
         var catPhotos by remember { mutableStateOf<List<CatPhoto>>(emptyList()) }
         var currentCatPhoto by remember { mutableStateOf<CatPhoto?>(null) }
+        var isLoading by remember { mutableStateOf<Boolean>(true) }
         val coroutineScope = rememberCoroutineScope()
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val state by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
+        // Suspended functions
+        LaunchedEffect(state) {
+            if(currentCatPhoto == null){
+                isLoading = true
+                safelyFetch { data ->
+                    catPhotos = data
+                    currentCatPhoto = data.first()
+                    isLoading = false
+                }
+            }
+        }
 
         // Fetch data on first composition using LaunchedEffect
         LaunchedEffect(true) {
-            Log.d("Cat", "Fetching images...")
-            try {
-                catPhotos = fetchPhotos()
-                currentCatPhoto = catPhotos.first()
-            } catch (e: Exception) {
-                // Handle error
-                Log.e("Cat", "Failed to fetch photos: $e")
+            isLoading = true
+            safelyFetch { data ->
+                catPhotos = data
+                currentCatPhoto = data.first()
+                isLoading = false
             }
         }
 
@@ -108,29 +142,6 @@ fun WearHome() {
                     ),
                 scrollableState = scalingLazyListState,
             ) {
-//                item {
-//                    // Display the cat photos in your UI
-//                    Column(
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .padding(8.dp),
-//                        verticalArrangement = Arrangement.Top,
-//                        horizontalAlignment = Alignment.CenterHorizontally
-//                    ) {
-//                        // Inside the for loop where you display cat photos
-//                        for (catPhoto in catPhotos) {
-//                            Text(text = catPhoto.url)
-//                            SubcomposeAsyncImage(
-//                                model = catPhoto.url,
-//                                loading = {
-//                                    CircularProgressIndicator()
-//                                },
-//                                contentDescription = "Cat Photo",
-//                                modifier = Modifier.size(100.dp) // Adjust the size as needed
-//                            )
-//                        }
-//                    }
-//                }
                 if(currentCatPhoto != null){
                     item {
                         Spacer(
@@ -153,16 +164,16 @@ fun WearHome() {
                                 contentDescription = "Cat Photo",
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(MaterialTheme.shapes.medium)
+                                    .clip(RoundedCornerShape(14.dp))
                                     .clickable {
                                         coroutineScope.launch {
-                                            Log.d("Cat", "Fetching images...")
-                                            try {
-                                                catPhotos = fetchPhotos()
-                                                currentCatPhoto = catPhotos.first()
-                                            } catch (e: Exception) {
-                                                // Handle error
-                                                Log.e("Cat", "Failed to fetch photos: $e")
+                                            if(!isLoading){
+                                                isLoading = true
+                                                safelyFetch { data ->
+                                                    catPhotos = data
+                                                    currentCatPhoto = data.first()
+                                                    isLoading = false
+                                                }
                                             }
                                         }
                                     }
@@ -180,24 +191,26 @@ fun WearHome() {
                         Button(
                             onClick = {
                                 coroutineScope.launch {
-                                    Log.d("Cat", "Fetching images...")
-                                    try {
-                                        catPhotos = fetchPhotos()
-                                        currentCatPhoto = catPhotos.first()
-                                    } catch (e: Exception) {
-                                        // Handle error
-                                        Log.e("Cat", "Failed to fetch photos: $e")
+                                    isLoading = true
+                                    safelyFetch { data ->
+                                        catPhotos = data
+                                        currentCatPhoto = data.first()
+                                        isLoading = false
                                     }
                                 }
                             },
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 10.dp),
+                                .fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
                                 backgroundColor = MaterialTheme.colors.primary
-                            )
+                            ),
+                            enabled = !isLoading
                         ) {
-                            Text(text = "Refresh")
+                            if(isLoading){
+                                CircularProgressIndicator(indicatorColor = MaterialTheme.colors.primary)
+                            } else {
+                                Text(text = "Refresh")
+                            }
                         }
                     }
                 } else {
