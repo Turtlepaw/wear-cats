@@ -92,6 +92,20 @@ suspend fun safelyFetch(onSuccess: (data: List<CatPhoto>) -> Unit){
     }
 }
 
+suspend fun safelyFetchAsync(limit: Int = 1): List<CatPhoto> {
+    Log.d(tag, "Fetching images...")
+    try {
+        val photos = fetchPhotos(limit)
+        return photos
+    } catch (e: Exception) {
+        // Handle error
+        Log.e(tag, "Failed to fetch photos: $e")
+        delay(5000)
+        // Auto Retry
+        return safelyFetchAsync(limit)
+    }
+}
+
 @OptIn(ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class)
 @Composable
 fun WearHome() {
@@ -231,11 +245,11 @@ fun WearHome() {
 }
 
 // Function to fetch data from network
-private suspend fun fetchPhotos(): List<CatPhoto> {
+suspend fun fetchPhotos(limit: Int = 1): List<CatPhoto> {
     return withContext(Dispatchers.IO) {
         // Perform network operations in the IO dispatcher
         val apiKey = "live_fovq4asUWISV2ny8WGmJNlTXTyzAaqD1KhuDZ6b5FS7GC8OLVbz4NwEk8Wa6rkVm"
-        val apiUrl = "https://api.thecatapi.com/v1/images/search?limit=1&api_key=$apiKey"
+        val apiUrl = "https://api.thecatapi.com/v1/images/search?limit=${limit}&api_key=$apiKey"
 
         val url = URL(apiUrl)
         val connection: HttpURLConnection = url.openConnection() as HttpURLConnection

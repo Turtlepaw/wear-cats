@@ -86,7 +86,7 @@ fun WearSettings(
                 item {
                     Button(
                         onClick = {
-                            navigate(Routes.GOAL_PICKER.getRoute())
+
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -95,98 +95,18 @@ fun WearSettings(
                             backgroundColor = MaterialTheme.colors.primary
                         )
                     ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.offline_download),
+                            contentDescription = "Download for Offline",
+                            tint = MaterialTheme.colors.primary,
+                            modifier = Modifier
+                                .padding(end = 2.dp)
+                        )
                         Text(
-                            text = "${goal}m goal",
+                            text = "Download",
                             color = Color.Black
                         )
                     }
-                }
-                item {
-                    Button(
-                        onClick = {
-                            navigate(Routes.SUN_PICKER.getRoute())
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = MaterialTheme.colors.primary
-                        )
-                    ) {
-                        Text(
-                            text = "$sunlightThreshold threshold",
-                            color = Color.Black
-                        )
-                    }
-                }
-                item {
-                    Button(
-                        onClick = {
-                            navigate(Routes.CLOCKWORK.getRoute())
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = MaterialTheme.colors.primary
-                        )
-                    ) {
-                        Text(
-                            text = "Toolkit",
-                            color = Color.Black
-                        )
-                    }
-                }
-                item {
-                    ToggleChip(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp),
-                        checked = isBatterySaver,
-                        onCheckedChange = { isEnabled ->
-                            setBatterySaver(isEnabled)
-                        },
-                        label = {
-                            Text("Battery Saver", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        },
-                        appIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.battery_saver),
-                                contentDescription = "battery saver",
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .wrapContentSize(align = Alignment.Center),
-                            )
-                        },
-                        toggleControl = {
-                            Switch(
-                                checked = isBatterySaver,
-                                enabled = true,
-                                modifier = Modifier.semantics {
-                                    this.contentDescription =
-                                        if (isBatterySaver) "On" else "Off"
-                                },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = MaterialTheme.colors.primary
-                                )
-                            )
-                        },
-                        enabled = true,
-                        colors = ToggleChipDefaults.toggleChipColors(
-                            checkedEndBackgroundColor = MaterialTheme.colors.secondary
-                        )
-                    )
-                }
-                item {
-                    Text(
-                        text = "This app is open-source",
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .padding(
-                                top = 10.dp
-                            )
-                    )
                 }
             }
         }
