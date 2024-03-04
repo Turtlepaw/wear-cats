@@ -248,8 +248,8 @@ fun WearHome() {
 suspend fun fetchPhotos(limit: Int = 1): List<CatPhoto> {
     return withContext(Dispatchers.IO) {
         // Perform network operations in the IO dispatcher
-        val apiKey = "live_fovq4asUWISV2ny8WGmJNlTXTyzAaqD1KhuDZ6b5FS7GC8OLVbz4NwEk8Wa6rkVm"
-        val apiUrl = "https://api.thecatapi.com/v1/images/search?limit=${limit}&api_key=$apiKey"
+        val apiKey = "API_KEY"
+        val apiUrl = "https://api.thecatapi.com/v1/images/search?limit=${limit}"
 
         val url = URL(apiUrl)
         val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
