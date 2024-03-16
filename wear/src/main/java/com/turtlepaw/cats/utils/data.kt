@@ -1,107 +1,94 @@
 package com.turtlepaw.cats.utils
 
-import android.util.Log
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Bitmap.CompressFormat
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.provider.MediaStore
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.turtlepaw.cats.utils.SunlightViewModel.PreferencesKeys.SUNLIGHT_HISTORY_KEY
+import coil.imageLoader
+import com.turtlepaw.cats.presentation.pages.fetchPhotos
+import com.turtlepaw.cats.tile.loadImage
+import com.turtlepaw.cats.utils.ImageViewModel.PreferencesKeys.IMAGE_KEY
 import kotlinx.coroutines.flow.first
-import java.time.LocalDate
-import java.time.format.DateTimeParseException
+import java.io.ByteArrayOutputStream
+import java.util.Base64
 
-class SunlightViewModel(private val dataStore: DataStore<Preferences>) : ViewModel() {
+fun encodeToBase64(image: Bitmap, compressFormat: CompressFormat?, quality: Int): String {
+    val byteArrayOS = ByteArrayOutputStream()
+    image.compress(compressFormat!!, quality, byteArrayOS)
+    return Base64.getEncoder().encodeToString(byteArrayOS.toByteArray())
+}
+
+fun decodeBase64(input: String): Bitmap {
+    val decodedBytes: ByteArray = Base64.getDecoder().decode(input)
+    return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+}
+
+fun decodeByteArray(input: String): ByteArray {
+    return Base64.getDecoder().decode(input)
+}
+
+class ImageViewModel(private val dataStore: DataStore<Preferences>) : ViewModel() {
     private object PreferencesKeys {
-        val SUNLIGHT_HISTORY_KEY = stringSetPreferencesKey("sunlight")
+        val IMAGE_KEY = stringSetPreferencesKey("images")
     }
 
-    /**
-     * Creates a new entry in the sunlight history
-     * that "starts" a new day
-     */
-    suspend fun startDay() {
+    private fun getImageUri(inContext: Context, inImage: Bitmap): Uri {
+        val bytes = ByteArrayOutputStream()
+        inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes)
+        val path =
+            MediaStore.Images.Media.insertImage(inContext.contentResolver, inImage, "Title", null)
+        return Uri.parse(path)
+    }
+
+    suspend fun downloadImages(context: Context){
         dataStore.edit { preferences ->
-            val history = (preferences[SUNLIGHT_HISTORY_KEY] ?: mutableSetOf()).toMutableSet()
-            val date = LocalDate.now()
-            history.add("$date - 0")
-            preferences[SUNLIGHT_HISTORY_KEY] = history
-        }
-    }
-
-    suspend fun addMinute(date: LocalDate){
-        val day = getDay(date)
-        val minutes = (day?.second ?: 0).plus(1)
-        if(day == null) startDay()
-        dataStore.edit { preferences ->
-            val history = (preferences[SUNLIGHT_HISTORY_KEY] ?: mutableSetOf()).toMutableSet()
-            Log.d("DataStore", "Minutes: ${day?.second} $minutes ($date - ${history.find { it.startsWith(date.toString()) }})")
-            history.removeIf { it.startsWith(date.toString()) }
-            history.add("$date - $minutes")
-            preferences[SUNLIGHT_HISTORY_KEY] = history
-        }
-    }
-
-    suspend fun add(date: LocalDate, time: Int){
-        val day = getDay(date)
-        val minutes = (day?.second ?: 0).plus(time)
-        if(day == null) startDay()
-        dataStore.edit { preferences ->
-            val history = (preferences[SUNLIGHT_HISTORY_KEY] ?: mutableSetOf()).toMutableSet()
-            history.removeIf { it.startsWith(date.toString()) }
-            history.add("$date - $minutes")
-            preferences[SUNLIGHT_HISTORY_KEY] = history
-        }
-    }
-
-    private fun parseEntry(str: String): Pair<LocalDate, Int>? {
-        val split = str.split(" - ")
-        if (split.size != 2) {
-            return null
-        }
-        val dateStr = split[0]
-        val minutesStr = split[1]
-        val date = try {
-            LocalDate.parse(dateStr)
-        } catch (e: DateTimeParseException) {
-            return null
-        }
-        val minutes = try {
-            minutesStr.toInt()
-        } catch (e: IllegalArgumentException) {
-            return null
-        }
-        return date to minutes
-    }
-
-    suspend fun getAllHistory(): Set<Pair<LocalDate, Int>?> {
-        val preferences = dataStore.data.first() // blocking call to get the latest preferences
-        return preferences[SUNLIGHT_HISTORY_KEY]?.mapNotNull { entry ->
-            val split = entry.split(" - ")
-            if (split.size == 2) {
-                parseEntry(entry) // Extract and parse date string only
-            } else {
-                null
+            val images = emptySet<String>().toMutableSet()
+            val limit = 50
+            List(limit / 10){
+                val photos = fetchPhotos(10)
+                photos.forEach{
+                    val imageData = context.imageLoader.loadImage(context, it.url, 500)
+                    if (imageData != null) {
+                        images.add(
+                            encodeToBase64(imageData, CompressFormat.WEBP_LOSSLESS, 80)
+                        )
+                    }
+                }
             }
-        }?.toSet() ?: emptySet()
+            preferences[IMAGE_KEY] = images
+        }
     }
 
-    suspend fun getDay(date: LocalDate): Pair<LocalDate, Int>? {
+    suspend fun getImages(): List<String> {
         val preferences = dataStore.data.first() // blocking call to get the latest preferences
-        val bedtimeHistory = preferences[SUNLIGHT_HISTORY_KEY] ?: emptySet()
-        val result = bedtimeHistory.find { it.startsWith(date.toString()) }
+        return preferences[IMAGE_KEY]?.toList() ?: emptyList()
+    }
 
-        return if(result == null) null
-        else parseEntry(result)
+    companion object {
+        private lateinit var instance: ImageViewModel
+
+        fun getInstance(dataStore: DataStore<Preferences>): ImageViewModel {
+            if (!::instance.isInitialized) {
+                instance = ImageViewModel(dataStore)
+            }
+            return instance
+        }
     }
 }
 
-class SunlightViewModelFactory(private val dataStore: DataStore<Preferences>) : ViewModelProvider.Factory {
+class ImageViewModelFactory(private val dataStore: DataStore<Preferences>) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(SunlightViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(ImageViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SunlightViewModel(dataStore) as T
+            return ImageViewModel(dataStore) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

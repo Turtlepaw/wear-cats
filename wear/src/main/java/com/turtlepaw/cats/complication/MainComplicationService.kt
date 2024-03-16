@@ -24,8 +24,8 @@ import com.turtlepaw.cats.R
 import com.turtlepaw.cats.presentation.dataStore
 import com.turtlepaw.cats.utils.Settings
 import com.turtlepaw.cats.utils.SettingsBasics
-import com.turtlepaw.cats.utils.SunlightViewModel
-import com.turtlepaw.cats.utils.SunlightViewModelFactory
+import com.turtlepaw.cats.utils.ImageViewModel
+import com.turtlepaw.cats.utils.ImageViewModelFactory
 import java.time.LocalDate
 
 
@@ -52,18 +52,11 @@ class MainComplicationService : SuspendingComplicationDataSourceService(), ViewM
     }
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
-        val sharedPreferences = getSharedPreferences(
-            SettingsBasics.SHARED_PREFERENCES.getKey(),
-            SettingsBasics.SHARED_PREFERENCES.getMode()
-        )
-        val sunlightViewModel = ViewModelProvider(this, SunlightViewModelFactory(this.dataStore)).get(
-            SunlightViewModel::class.java)
-        val today = sunlightViewModel.getDay(LocalDate.now())?.second ?: 0
-        val goal = sharedPreferences.getInt(Settings.GOAL.getKey(), Settings.GOAL.getDefaultAsInt())
+
         return createComplicationData(
-            today,
-            goal,
-            "${today}m",
+            0,
+            0,
+            "m",
             "Sunlight",
             request.complicationType,
             this

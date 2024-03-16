@@ -13,7 +13,7 @@ android {
         applicationId = "com.turtlepaw.cats"
         minSdk = 30
         targetSdk = 33
-        versionCode = 1
+        versionCode = 2
         versionName = "1.0"
         vectorDrawables {
             useSupportLibrary = true
@@ -73,11 +73,11 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.wear)
-    implementation(libs.vico.compose)
-    implementation(libs.vico.compose.m3)
-    implementation(libs.vico.core)
-    implementation("io.coil-kt:coil-compose:2.6.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation(libs.coil.compose)
+    implementation(libs.coil)
+    implementation(libs.coil.gif)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.work.runtime.ktx)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)

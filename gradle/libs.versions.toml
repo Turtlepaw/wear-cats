@@ -1,5 +1,6 @@
 [versions]
-agp = "8.4.0-alpha12"
+agp = "8.4.0-alpha13"
+coilCompose = "2.6.0"
 composeNavigation = "1.3.0"
 datastorePreferences = "1.0.0"
 desugar_jdk_libs = "2.0.4"
@@ -10,6 +11,7 @@ junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
 appcompat = "1.6.1"
+kotlinxSerializationJson = "1.6.3"
 lifecycleViewmodelCompose = "2.7.0"
 playServicesPal = "20.2.0"
 playServicesWearable = "18.1.0"
@@ -28,9 +30,14 @@ watchfaceComplicationsDataSourceKtx = "1.2.1"
 wear = "1.3.0"
 wearToolingPreview = "1.0.0"
 vico = "1.13.1"
+workRuntimeKtx = "2.9.0"
 
 [libraries]
 # For Jetpack Compose.
+coil = { module = "io.coil-kt:coil", version.ref = "coilCompose" }
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
+coil-gif = { module = "io.coil-kt:coil-gif", version.ref = "coilCompose" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 # For `compose`. Creates a `ChartStyle` based on an M3 Material Theme.
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
@@ -68,6 +75,7 @@ horologist-compose-tools = { group = "com.google.android.horologist", name = "ho
 horologist-tiles = { group = "com.google.android.horologist", name = "horologist-tiles", version.ref = "horologistTiles" }
 androidx-watchface-complications-data-source-ktx = { group = "androidx.wear.watchface", name = "watchface-complications-data-source-ktx", version.ref = "watchfaceComplicationsDataSourceKtx" }
 androidx-wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wearToolingPreview" }
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

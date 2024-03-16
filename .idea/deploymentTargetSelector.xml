@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="wear">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-03-03T02:47:42.273682600Z">
+        <DropdownSelection timestamp="2024-03-14T00:54:51.416730400Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\olivi\.android\avd\Copy_of_Pixel_Watch_virtual_.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\opott\.android\avd\Wear_OS_Small_Round_API_30.avd" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -15,17 +15,14 @@
       </SelectionState>
       <SelectionState runConfigName="mobile">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-03-02T00:45:52.700186500Z">
+        <DropdownSelection timestamp="2024-03-13T23:01:15.730068400Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\olivi\.android\avd\Pixel_Watch_virtual_.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\opott\.android\avd\Wear_OS_Small_Round_API_30.avd" />
             </handle>
           </Target>
         </DropdownSelection>
         <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="DefaultPreview">
-        <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
   </component>

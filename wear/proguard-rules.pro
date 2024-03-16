@@ -9,3 +9,6 @@
 
 # Keep utils
 -keep class com.turtlepaw.cats.utils.** { *; }
+
+# Keep services
+-keep class com.turtlepaw.cats.services.CatDownloadWorker  { *; }
