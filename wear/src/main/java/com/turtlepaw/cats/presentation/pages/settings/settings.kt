@@ -139,7 +139,7 @@ fun WearSettings(
                                 }
                             }
                             Text(
-                                text = if(!isConnected) "Offline" else if(isLoading) "Downloading" else if(isDownloaded) "Downloaded" else "Download",
+                                text = if(!isConnected) "Unavailable" else if(isLoading) "Downloading" else if(isDownloaded) "Downloaded" else "Download",
                                 color = MaterialTheme.colors.onPrimary
                             )
                         }

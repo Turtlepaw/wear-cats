@@ -26,9 +26,8 @@ fun encodeToBase64(image: Bitmap, compressFormat: CompressFormat?, quality: Int)
     return Base64.getEncoder().encodeToString(byteArrayOS.toByteArray())
 }
 
-fun decodeBase64(input: String): Bitmap {
-    val decodedBytes: ByteArray = Base64.getDecoder().decode(input)
-    return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+fun decodeBase64(input: ByteArray): Bitmap {
+    return BitmapFactory.decodeByteArray(input, 0, input.size)
 }
 
 fun decodeByteArray(input: String): ByteArray {

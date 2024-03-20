@@ -7,7 +7,6 @@
 package com.turtlepaw.cats.presentation
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
@@ -26,9 +25,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModelProvider
-import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.Icon
-import androidx.wear.compose.material.Text
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
@@ -37,9 +33,7 @@ import com.turtlepaw.cats.presentation.pages.settings.WearSettings
 import com.turtlepaw.cats.presentation.theme.SleepTheme
 import com.turtlepaw.cats.utils.ImageViewModel
 import com.turtlepaw.cats.utils.ImageViewModelFactory
-import com.turtlepaw.cats.utils.Settings
 import com.turtlepaw.cats.utils.SettingsBasics
-import java.time.LocalDate
 
 
 enum class Routes(private val route: String) {
@@ -90,12 +84,9 @@ class MainActivity : ComponentActivity() {
 
 fun isNetworkConnected(context: Context): Boolean {
     val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-    val network = connectivityManager.activeNetwork
-    val capabilities = connectivityManager.getNetworkCapabilities(network)
-    return capabilities != null &&
-            (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
+    val network = connectivityManager.activeNetwork ?: return false
+    val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
 }
 
 @Composable

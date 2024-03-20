@@ -217,6 +217,9 @@ fun WearHome(
                             )
                         )
                     }
+//                    item {
+//                        Image(bitmap = (decodeBase64(catPhotos[currentCatIndex] as ByteArray)).asImageBitmap(), contentDescription = "Cat")
+//                    }
                     item {
                         Box(
                             modifier = Modifier
