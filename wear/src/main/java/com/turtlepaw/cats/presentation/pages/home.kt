@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,7 +42,9 @@ import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
 import androidx.wear.compose.material.scrollAway
 import androidx.wear.tooling.preview.devices.WearDevices
+import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.cats.presentation.components.ItemsListWithModifier
@@ -49,6 +52,7 @@ import com.turtlepaw.cats.presentation.dataStore
 import com.turtlepaw.cats.presentation.theme.SleepTheme
 import com.turtlepaw.cats.utils.ImageViewModel
 import com.turtlepaw.cats.utils.decodeByteArray
+import com.valentinilk.shimmer.shimmer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -64,19 +68,15 @@ import java.net.URL
 
 @Serializable
 data class CatPhoto(
-    @SerialName("id")
-    val id: String,
-    @SerialName("url")
-    val url: String,
-    @SerialName("width")
-    val width: Int,
-    @SerialName("height")
-    val height: Int
+    @SerialName("id") val id: String,
+    @SerialName("url") val url: String,
+    @SerialName("width") val width: Int,
+    @SerialName("height") val height: Int
 )
 
 private const val tag = "CatImageFetch"
 
-suspend fun safelyFetch(onSuccess: (data: List<CatPhoto>) -> Unit){
+suspend fun safelyFetch(onSuccess: (data: List<CatPhoto>) -> Unit) {
     Log.d(tag, "Fetching images...")
     try {
         val photos = fetchPhotos(10)
@@ -109,10 +109,7 @@ fun SettingsButton(openSettings: () -> Unit) {
     return Button(
         onClick = {
             openSettings()
-        },
-        modifier = Modifier
-            .fillMaxWidth(),
-        colors = ButtonDefaults.buttonColors(
+        }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.primary
         )
     ) {
@@ -123,10 +120,7 @@ fun SettingsButton(openSettings: () -> Unit) {
 @OptIn(ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class)
 @Composable
 fun WearHome(
-    context: Context,
-    isConnected: Boolean,
-    viewModel: ImageViewModel,
-    openSettings: () -> Unit
+    context: Context, isConnected: Boolean, viewModel: ImageViewModel, openSettings: () -> Unit
 ) {
     SleepTheme {
         val focusRequester = rememberActiveFocusRequester()
@@ -144,10 +138,10 @@ fun WearHome(
         // Suspended functions
         LaunchedEffect(state, isConnected) {
             Log.d("CatEffect", "IS connected: $isConnected ${catPhotos.isEmpty()}")
-            if(isConnected) error = null
-            if(lastConnectedState != isConnected || catPhotos.isEmpty()){
+            if (isConnected) error = null
+            if (lastConnectedState != isConnected || catPhotos.isEmpty()) {
                 isLoading = true
-                if(isConnected){
+                if (isConnected) {
                     safelyFetch { data ->
                         catPhotos = data.map {
                             it.url
@@ -159,8 +153,9 @@ fun WearHome(
                     catPhotos = offlineImages.map {
                         decodeByteArray(it)
                     }.shuffled()
-                    if(offlineImages.isEmpty()) error = if(isOfflineAvailable) "You haven't downloaded any offline images"
-                     else "You're offline"
+                    if (offlineImages.isEmpty()) error =
+                        if (isOfflineAvailable) "You haven't downloaded any offline images"
+                        else "You're offline"
                     isLoading = false
                 }
             }
@@ -175,27 +170,24 @@ fun WearHome(
             contentAlignment = Alignment.Center,
         ) {
             ItemsListWithModifier(
-                modifier = Modifier
-                    .rotaryWithScroll(
-                        reverseDirection = false,
-                        focusRequester = focusRequester,
-                        scrollableState = scalingLazyListState,
-                    ),
+                modifier = Modifier.rotaryWithScroll(
+                    reverseDirection = false,
+                    focusRequester = focusRequester,
+                    scrollableState = scalingLazyListState,
+                ),
                 scrollableState = scalingLazyListState,
             ) {
-                if(error != null){
+                if (error != null) {
                     item {
                         Spacer(
                             modifier = Modifier.padding(
-                                top = 42.dp,
-                                bottom = 5.dp
+                                top = 42.dp, bottom = 5.dp
                             )
                         )
                     }
                     item {
                         Text(
-                            text = error!!,
-                            textAlign = TextAlign.Center
+                            text = error!!, textAlign = TextAlign.Center
                         )
                     }
                     item {
@@ -208,12 +200,11 @@ fun WearHome(
                     item {
                         SettingsButton(openSettings)
                     }
-                } else if(catPhotos.isNotEmpty()){
+                } else if (catPhotos.isNotEmpty()) {
                     item {
                         Spacer(
                             modifier = Modifier.padding(
-                                top = 42.dp,
-                                bottom = 5.dp
+                                top = 42.dp, bottom = 5.dp
                             )
                         )
                     }
@@ -222,14 +213,29 @@ fun WearHome(
 //                    }
                     item {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                        ){
-                            SubcomposeAsyncImage(
-                                model = catPhotos[currentCatIndex],
-                                loading = {
-                                    CircularProgressIndicator()
-                                },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(128.dp)
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .shimmer()
+                                    .background(MaterialTheme.colors.secondary)
+                                    .shimmer()
+                            )
+
+                            SubcomposeAsyncImage(model = catPhotos[currentCatIndex],
+//                                loading = {
+//                                    //CircularProgressIndicator()
+//                                    Box(
+//                                        modifier = Modifier
+//                                            .size(128.dp)
+//                                            .shimmer()
+//                                            .background(MaterialTheme.colors.surface)
+//                                            .shimmer()
+//                                    )
+//                                },
                                 contentDescription = "Cat Photo",
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -257,7 +263,20 @@ fun WearHome(
                                             }
                                         }
                                     }
-                            )
+                            ) {
+                                val paintState = painter.state
+                                if (paintState is AsyncImagePainter.State.Loading || paintState is AsyncImagePainter.State.Error) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(128.dp)
+                                            .shimmer()
+                                            .background(MaterialTheme.colors.secondary)
+                                            .shimmer()
+                                    )
+                                } else {
+                                    SubcomposeAsyncImageContent()
+                                }
+                            }
                         }
                     }
                     item {
@@ -273,8 +292,8 @@ fun WearHome(
                                 coroutineScope.launch {
                                     if (!isLoading) {
                                         isLoading = true
-                                        if(currentCatIndex == 9){
-                                            if(isConnected){
+                                        if (currentCatIndex == 9) {
+                                            if (isConnected) {
                                                 safelyFetch { data ->
                                                     catPhotos = data.map {
                                                         it.url
@@ -292,14 +311,13 @@ fun WearHome(
                                     }
                                 }
                             },
-                            modifier = Modifier
-                                .fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
                                 backgroundColor = MaterialTheme.colors.primary
                             ),
                             enabled = !isLoading
                         ) {
-                            if(isLoading){
+                            if (isLoading) {
                                 CircularProgressIndicator(indicatorColor = MaterialTheme.colors.primary)
                             } else {
                                 Text(text = "Refresh")
@@ -359,8 +377,6 @@ suspend fun fetchPhotos(limit: Int = 1): List<CatPhoto> {
 @Composable
 fun DefaultPreview() {
     WearHome(
-        LocalContext.current,
-        false,
-        viewModel = ImageViewModel(LocalContext.current.dataStore)
-    ){}
+        LocalContext.current, false, viewModel = ImageViewModel(LocalContext.current.dataStore)
+    ) {}
 }

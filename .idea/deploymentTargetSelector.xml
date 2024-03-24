@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="wear">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-03-14T00:54:51.416730400Z">
+        <DropdownSelection timestamp="2024-03-24T00:54:51.913573600Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\opott\.android\avd\Wear_OS_Small_Round_API_30.avd" />
+              <DeviceId pluginId="Default" identifier="serial=10.0.0.44:41231;connection=5c647392" />
             </handle>
           </Target>
         </DropdownSelection>
