@@ -220,12 +220,13 @@ fun WearHome(
                                     .size(128.dp)
                                     .fillMaxSize()
                                     .clip(RoundedCornerShape(14.dp))
-                                    .shimmer()
-                                    .background(MaterialTheme.colors.secondary)
+//                                    .shimmer()
+//                                    .background(MaterialTheme.colors.secondary)
+                                    .background(MaterialTheme.colors.background)
                                     .shimmer()
                             )
 
-                            SubcomposeAsyncImage(model = catPhotos[currentCatIndex],
+                            SubcomposeAsyncImage( model = catPhotos[currentCatIndex],
 //                                loading = {
 //                                    //CircularProgressIndicator()
 //                                    Box(
