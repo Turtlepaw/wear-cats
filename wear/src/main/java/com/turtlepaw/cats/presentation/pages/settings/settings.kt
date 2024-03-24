@@ -49,7 +49,7 @@ fun WearSettings(
     context: Context,
     isConnected: Boolean,
     viewModel: ImageViewModel
-){
+) {
     SleepTheme {
         val focusRequester = rememberActiveFocusRequester()
         val scalingLazyListState = rememberScalingLazyListState()
@@ -86,7 +86,7 @@ fun WearSettings(
                 )
             ) {
                 item {
-                    Text(text = "Settings")
+                    Text(text = "Downloads")
                 }
                 item {
                     Button(
@@ -119,12 +119,12 @@ fun WearSettings(
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(modifier = Modifier.padding(end = 10.dp)){
-                                if(isLoading){
+                            Box(modifier = Modifier.padding(end = 10.dp)) {
+                                if (isLoading) {
                                     CircularProgressIndicator(
                                         indicatorColor = MaterialTheme.colors.primary
                                     )
-                                } else if(isDownloaded) {
+                                } else if (isDownloaded) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.check),
                                         contentDescription = "Downloaded for Offline",
@@ -139,7 +139,7 @@ fun WearSettings(
                                 }
                             }
                             Text(
-                                text = if(!isConnected) "Unavailable" else if(isLoading) "Downloading" else if(isDownloaded) "Downloaded" else "Download",
+                                text = if (!isConnected) "Unavailable" else if (isLoading) "Downloading" else if (isDownloaded) "Downloaded" else "Download",
                                 color = MaterialTheme.colors.onPrimary
                             )
                         }
