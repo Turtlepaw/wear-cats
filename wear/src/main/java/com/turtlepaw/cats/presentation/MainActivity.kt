@@ -45,7 +45,7 @@ enum class Routes(private val route: String) {
     CLOCKWORK("/clockwork-toolkit");
 
     fun getRoute(query: String? = null): String {
-        return if(query != null){
+        return if (query != null) {
             "$route/$query"
         } else route
     }
@@ -83,7 +83,8 @@ class MainActivity : ComponentActivity() {
 }
 
 fun isNetworkConnected(context: Context): Boolean {
-    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     val network = connectivityManager.activeNetwork ?: return false
     val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
     return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
@@ -93,7 +94,7 @@ fun isNetworkConnected(context: Context): Boolean {
 fun WearPages(
     context: Context,
     viewModel: ImageViewModel
-){
+) {
     SleepTheme {
         // Creates a navigation controller for our pages
         val navController = rememberSwipeDismissableNavController()
@@ -118,7 +119,7 @@ fun WearPages(
                     navController.navigate(Routes.SETTINGS.getRoute())
                 }
             }
-            composable(Routes.SETTINGS.getRoute()){
+            composable(Routes.SETTINGS.getRoute()) {
                 WearSettings(
                     context,
                     isConnected,

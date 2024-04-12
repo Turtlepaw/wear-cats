@@ -23,7 +23,6 @@ import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.ResourceBuilders.ImageResource
 import coil.ImageLoader
 import coil.request.ImageRequest
-import coil.transform.CircleCropTransformation
 import java.nio.ByteBuffer
 
 suspend fun ImageLoader.loadImage(context: Context, url: String, size: Int? = 64): Bitmap? {
@@ -35,7 +34,6 @@ suspend fun ImageLoader.loadImage(context: Context, url: String, size: Int? = 64
             }
         }
         .allowRgb565(true)
-        .transformations(CircleCropTransformation())
         .allowHardware(false)
         .build()
     val response = execute(request)

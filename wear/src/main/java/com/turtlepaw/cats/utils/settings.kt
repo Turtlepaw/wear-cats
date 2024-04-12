@@ -1,14 +1,37 @@
 package com.turtlepaw.cats.utils
 
 import android.content.Context
+import androidx.compose.material.icons.Icons
+import com.turtlepaw.cats.R
 import java.time.LocalTime
+
+enum class Animals {
+    CATS,
+    BUNNIES
+}
+
+fun enumToJSON(enumList: List<Animals>): String {
+    return enumList.joinToString(",")
+}
+
+// Function to retrieve enum list from SharedPreferences
+fun enumFromJSON(data: String?): List<Animals> {
+    return data?.split(",")?.mapNotNull { enumName ->
+        try {
+            Animals.valueOf(enumName)
+        } catch (e: IllegalArgumentException) {
+            null
+        }
+    } ?: emptyList()
+}
 
 enum class Settings(private val key: String, private val default: Any?) {
     GOAL("goal", 15),
     SUN_THRESHOLD("threshold", 5000),
     TIMEOUT("timeout", LocalTime.of(20, 0)),
     WAKEUP("wakeup", LocalTime.of(5, 0)),
-    BATTERY_SAVER("battery_saver", true);
+    BATTERY_SAVER("battery_saver", true),
+    ANIMALS("animals", enumToJSON(listOf(Animals.CATS, Animals.BUNNIES)));
 
     fun getKey(): String {
         return key

@@ -47,13 +47,21 @@ class ImageViewModel(private val dataStore: DataStore<Preferences>) : ViewModel(
         return Uri.parse(path)
     }
 
-    suspend fun downloadImages(context: Context){
+    suspend fun downloadImages(context: Context) {
         dataStore.edit { preferences ->
             val images = emptySet<String>().toMutableSet()
             val limit = 50
-            List(limit / 10){
-                val photos = fetchPhotos(10)
-                photos.forEach{
+            val animalTypes = context.getSharedPreferences(
+                SettingsBasics.SHARED_PREFERENCES.getKey(),
+                SettingsBasics.SHARED_PREFERENCES.getMode()
+            ).getString(
+                Settings.ANIMALS.getKey(),
+                Settings.ANIMALS.getDefault()
+            )
+            val types = enumFromJSON(animalTypes)
+            List(limit / 10) {
+                val photos = fetchPhotos(10, types)
+                photos.forEach {
                     val imageData = context.imageLoader.loadImage(context, it.url, 500)
                     if (imageData != null) {
                         images.add(
@@ -83,7 +91,8 @@ class ImageViewModel(private val dataStore: DataStore<Preferences>) : ViewModel(
     }
 }
 
-class ImageViewModelFactory(private val dataStore: DataStore<Preferences>) : ViewModelProvider.Factory {
+class ImageViewModelFactory(private val dataStore: DataStore<Preferences>) :
+    ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ImageViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")

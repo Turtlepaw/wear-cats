@@ -23,7 +23,10 @@ import com.google.android.horologist.compose.tools.buildDeviceParameters
 import com.google.android.horologist.tiles.SuspendingTileService
 import com.turtlepaw.cats.R
 import com.turtlepaw.cats.presentation.pages.safelyFetchAsync
+import com.turtlepaw.cats.utils.Settings
+import com.turtlepaw.cats.utils.SettingsBasics
 import com.turtlepaw.cats.utils.TimeManager
+import com.turtlepaw.cats.utils.enumFromJSON
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -49,6 +52,14 @@ class MainTileService : SuspendingTileService() {
     override suspend fun resourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest
     ): ResourceBuilders.Resources {
+        val animalTypes = getSharedPreferences(
+            SettingsBasics.SHARED_PREFERENCES.getKey(),
+            SettingsBasics.SHARED_PREFERENCES.getMode()
+        ).getString(
+            Settings.ANIMALS.getKey(),
+            Settings.ANIMALS.getDefault()
+        )
+        val types = enumFromJSON(animalTypes)
         val resources = ResourceBuilders.Resources.Builder()
             .setVersion(RESOURCES_VERSION)
             .addIdToImageMapping(
@@ -56,12 +67,12 @@ class MainTileService : SuspendingTileService() {
                 ResourceBuilders.ImageResource.Builder()
                     .setAndroidResourceByResId(
                         ResourceBuilders.AndroidImageResourceByResId.Builder()
-                        .setResourceId(R.drawable.refresh)
-                        .build()
+                            .setResourceId(R.drawable.refresh)
+                            .build()
                     ).build()
             )
 
-        val catImages = safelyFetchAsync(MAX_LIMIT)
+        val catImages = safelyFetchAsync(MAX_LIMIT, types)
         val images = coroutineScope {
             catImages.map { image ->
                 async {
@@ -88,7 +99,7 @@ class MainTileService : SuspendingTileService() {
         val lastClickableId = requestParams.currentState.lastClickableId
         if (lastClickableId == LAUNCH_APP_ID) {
             startActivity(packageManager.getLaunchIntentForPackage(packageName))
-        } else if(lastClickableId.startsWith(MODIFIER_CLICK_REFRESH)){
+        } else if (lastClickableId.startsWith(MODIFIER_CLICK_REFRESH)) {
             hapticClick(applicationContext)
             // We can't have more than 1 image
             // since of android.os.TransactionTooLargeException
@@ -167,7 +178,9 @@ fun TilePreview() {
     val timeDifference = timeManager.calculateTimeDifference(LocalTime.of(5, 0));
     val sleepQuality = timeManager.calculateSleepQuality(timeDifference)
 
-    LayoutRootPreview(root = layout(
-        1
-    ))
+    LayoutRootPreview(
+        root = layout(
+            1
+        )
+    )
 }
