@@ -6,6 +6,7 @@ import android.graphics.Bitmap.CompressFormat
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -19,6 +20,7 @@ import com.turtlepaw.cats.utils.ImageViewModel.PreferencesKeys.IMAGE_KEY
 import kotlinx.coroutines.flow.first
 import java.io.ByteArrayOutputStream
 import java.util.Base64
+import kotlin.math.min
 
 fun encodeToBase64(image: Bitmap, compressFormat: CompressFormat?, quality: Int): String {
     val byteArrayOS = ByteArrayOutputStream()
@@ -34,6 +36,8 @@ fun decodeByteArray(input: String): ByteArray {
     return Base64.getDecoder().decode(input)
 }
 
+val DOWNLOAD_LIMIT = 100
+
 class ImageViewModel(private val dataStore: DataStore<Preferences>) : ViewModel() {
     private object PreferencesKeys {
         val IMAGE_KEY = stringSetPreferencesKey("images")
@@ -47,10 +51,15 @@ class ImageViewModel(private val dataStore: DataStore<Preferences>) : ViewModel(
         return Uri.parse(path)
     }
 
-    suspend fun downloadImages(context: Context) {
+    suspend fun downloadImages(
+        context: Context,
+        onProgressUpdate: suspend (Int, Int) -> Unit
+    ) {
         dataStore.edit { preferences ->
-            val images = emptySet<String>().toMutableSet()
-            val limit = 50
+            val images = mutableSetOf<String>()
+            val limit = DOWNLOAD_LIMIT
+            var imagesDownloaded = 0
+
             val animalTypes = context.getSharedPreferences(
                 SettingsBasics.SHARED_PREFERENCES.getKey(),
                 SettingsBasics.SHARED_PREFERENCES.getMode()
@@ -59,17 +68,23 @@ class ImageViewModel(private val dataStore: DataStore<Preferences>) : ViewModel(
                 Settings.ANIMALS.getDefault()
             )
             val types = enumFromJSON(animalTypes)
-            List(limit / 10) {
-                val photos = fetchPhotos(10, types)
-                photos.forEach {
-                    val imageData = context.imageLoader.loadImage(context, it.url, 500)
+
+            while (imagesDownloaded < limit) {
+                val batchSize = min(10, limit - imagesDownloaded)
+                val photos = fetchPhotos(batchSize, types)
+
+                photos.forEach { photo ->
+                    val imageData = context.imageLoader.loadImage(context, photo.url, 500)
                     if (imageData != null) {
                         images.add(
                             encodeToBase64(imageData, CompressFormat.WEBP_LOSSLESS, 80)
                         )
+                        imagesDownloaded++
+                        onProgressUpdate(imagesDownloaded, limit)
                     }
                 }
             }
+            Log.d("Worker", "Done at $imagesDownloaded")
             preferences[IMAGE_KEY] = images
         }
     }

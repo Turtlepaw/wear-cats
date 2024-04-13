@@ -31,7 +31,9 @@ enum class Settings(private val key: String, private val default: Any?) {
     TIMEOUT("timeout", LocalTime.of(20, 0)),
     WAKEUP("wakeup", LocalTime.of(5, 0)),
     BATTERY_SAVER("battery_saver", true),
-    ANIMALS("animals", enumToJSON(listOf(Animals.CATS, Animals.BUNNIES)));
+    ANIMALS("animals", enumToJSON(listOf(Animals.CATS, Animals.BUNNIES))),
+    DAILY_WORK_ID("download_work_id", null),
+    LAST_DOWNLOAD("last_download", null);
 
     fun getKey(): String {
         return key
@@ -89,6 +91,18 @@ enum class Settings(private val key: String, private val default: Any?) {
 
             else -> {
                 0
+            }
+        }
+    }
+
+    fun getDefaultOrNull(): Any? {
+        return when (default) {
+            is String -> {
+                default
+            }
+
+            else -> {
+                null
             }
         }
     }
