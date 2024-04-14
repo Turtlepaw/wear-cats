@@ -1,7 +1,8 @@
 package com.turtlepaw.cats.presentation.pages.settings
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,8 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,18 +47,21 @@ import androidx.wear.compose.material.Switch
 import androidx.wear.compose.material.SwitchDefaults
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
-import androidx.wear.compose.material.ToggleButton
 import androidx.wear.compose.material.ToggleChip
 import androidx.wear.compose.material.ToggleChipDefaults
 import androidx.wear.compose.material.scrollAway
 import androidx.work.Constraints
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequest
+import androidx.work.Operation
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionStatus
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.cats.R
@@ -69,6 +75,7 @@ import com.turtlepaw.cats.utils.Settings
 import com.turtlepaw.cats.utils.SettingsBasics
 import com.turtlepaw.cats.utils.enumFromJSON
 import com.turtlepaw.cats.utils.enumToJSON
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -76,7 +83,11 @@ import java.time.format.DateTimeParseException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-@OptIn(ExperimentalWearFoundationApi::class, ExperimentalHorologistApi::class)
+@SuppressLint("InlinedApi")
+@OptIn(
+    ExperimentalWearFoundationApi::class, ExperimentalHorologistApi::class,
+    ExperimentalPermissionsApi::class
+)
 @Composable
 fun WearSettings(
     context: Context,
@@ -84,11 +95,19 @@ fun WearSettings(
     viewModel: ImageViewModel
 ) {
     SleepTheme {
+        val workManager = WorkManager.getInstance(context)
+        val workRequest = remember {
+            OneTimeWorkRequestBuilder<CatDownloadWorker>()
+                .addTag(CatDownloadWorker.WORK_NAME) // Add a unique tag to identify the work request
+                .build()
+        }
+        val work = remember {
+            mutableStateOf<Operation?>(null)
+        }
         val focusRequester = rememberActiveFocusRequester()
         val scalingLazyListState = rememberScalingLazyListState()
         val coroutineScope = rememberCoroutineScope()
         var isLoading by remember { mutableStateOf(false) }
-        var isDownloaded by remember { mutableStateOf(false) }
         var animalsEnabled by remember { mutableStateOf<List<Animals>>(emptyList()) }
         var downloadProgress by remember { mutableStateOf<Int>(0) }
         val sharedPreferences = context.getSharedPreferences(
@@ -101,11 +120,13 @@ fun WearSettings(
         )
         var lastDownload by remember {
             mutableStateOf(
-                try {
-                    LocalDate.parse(lastDownloadStr)
-                } catch (e: DateTimeParseException) {
-                    null
-                }
+                if (lastDownloadStr != null) {
+                    try {
+                        LocalDate.parse(lastDownloadStr)
+                    } catch (e: DateTimeParseException) {
+                        null
+                    }
+                } else null
             )
         }
         val dailyDownloadId = sharedPreferences.getString(
@@ -113,15 +134,58 @@ fun WearSettings(
             null
         )
         var dailyDownloads by remember { mutableStateOf<String?>(dailyDownloadId) }
+        var isDownloaded by remember { mutableStateOf(lastDownload != null) }
         LaunchedEffect(true, isDownloaded) {
-            val images = viewModel.getImages()
-            isDownloaded = images.isNotEmpty()
+//            val images = viewModel.getImages()
+//            isDownloaded = images.isNotEmpty()
             val animals = sharedPreferences.getString(
                 Settings.ANIMALS.getKey(),
                 Settings.ANIMALS.getDefault()
             )
             animalsEnabled = enumFromJSON(animals)
         }
+
+        var workId by remember { mutableStateOf<UUID?>(null) }
+        val notificationPermissionState = rememberPermissionState(
+            Manifest.permission.POST_NOTIFICATIONS
+        ) {
+            workId = workRequest.id
+            workManager.enqueue(workRequest)
+        }
+        DisposableEffect(workId) {
+            val observer = Observer<WorkInfo> { workInfo ->
+                when (workInfo.state) {
+                    WorkInfo.State.RUNNING -> {
+                        downloadProgress = workInfo.progress.getInt("Progress", 0)
+                        isLoading = true
+                    }
+
+                    WorkInfo.State.SUCCEEDED -> {
+                        downloadProgress = 0
+                        isLoading = false
+                    }
+
+                    WorkInfo.State.FAILED -> {
+                        coroutineScope.launch {
+                            downloadProgress = 0
+                            delay(2000)
+                            workManager.enqueue(workRequest)
+                            workId = workRequest.id
+                        }
+                    }
+
+                    else -> {}
+                }
+            }
+
+            val liveData = workManager.getWorkInfoByIdLiveData(workRequest.id)
+            liveData.observeForever(observer)
+
+            onDispose {
+                liveData.removeObserver(observer)
+            }
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -158,28 +222,36 @@ fun WearSettings(
                             coroutineScope.launch {
                                 isLoading = true
                                 //viewModel.downloadImages(context)
-                                val workRequest =
-                                    OneTimeWorkRequestBuilder<CatDownloadWorker>().addTag(
-                                        CatDownloadWorker.WORK_NAME
-                                    ) // Add a unique tag to identify the work request
-                                        .build()
-                                val workManager = WorkManager.getInstance(context)
-                                val work = workManager.enqueue(workRequest)
-                                workManager.getWorkInfoByIdLiveData(workRequest.id)
-                                    .observeForever { workInfo ->
-                                        if (workInfo != null && workInfo.state == WorkInfo.State.RUNNING) {
-                                            val progress = workInfo.progress
-                                            val value = progress.getInt("Progress", 0)
-                                            downloadProgress = value
-                                        }
-                                    }
-                                workManager.getWorkInfoByIdLiveData(workRequest.id)
-                                    .observeForever { workInfo ->
-                                        if (workInfo != null && workInfo.state == WorkInfo.State.SUCCEEDED) {
-                                            isLoading = false
-                                            lastDownload = LocalDate.now()
-                                        }
-                                    }
+//                                val workRequest =
+//                                    OneTimeWorkRequestBuilder<CatDownloadWorker>().addTag(
+//                                        CatDownloadWorker.WORK_NAME
+//                                    ) // Add a unique tag to identify the work request
+//                                        .build()
+//                                val workManager = WorkManager.getInstance(context)
+                                //work.value = workManager.enqueue(workRequest)
+                                if (notificationPermissionState.status.isGranted) {
+                                    workId = workRequest.id
+                                    workManager.enqueue(workRequest)
+                                } else notificationPermissionState.launchPermissionRequest()
+//                                workManager.getWorkInfoByIdLiveData(workRequest.id)
+//                                    .observeForever { workInfo ->
+//                                        if (workInfo != null && workInfo.state == WorkInfo.State.RUNNING) {
+//                                            val progress = workInfo.progress
+//                                            val value = progress.getInt("Progress", 0)
+//                                            Log.d(
+//                                                "DownloadProgress",
+//                                                "Received new progress of $value"
+//                                            )
+//                                            downloadProgress = value
+//                                        }
+//                                    }
+//                                workManager.getWorkInfoByIdLiveData(workRequest.id)
+//                                    .observeForever { workInfo ->
+//                                        if (workInfo != null && workInfo.state == WorkInfo.State.SUCCEEDED) {
+//                                            isLoading = false
+//                                            lastDownload = LocalDate.now()
+//                                        }
+//                                    }
                             }
                         },
                         modifier = Modifier
@@ -223,7 +295,7 @@ fun WearSettings(
                             }
                             Text(
                                 text = if (!isConnected) "Unavailable" else if (isLoading) "Downloading" else if (isDownloaded) "Downloaded" else "Download",
-                                color = MaterialTheme.colors.onPrimary
+                                color = if (isLoading || !isConnected) MaterialTheme.colors.primary else MaterialTheme.colors.onPrimary
                             )
                         }
                     }
@@ -246,13 +318,12 @@ fun WearSettings(
                                     .setRequiresBatteryNotLow(true)
                                     .build()
 
-                                val workRequest: WorkRequest =
+                                val recurringWorkRequest: WorkRequest =
                                     PeriodicWorkRequestBuilder<CatDownloadWorker>(1, TimeUnit.DAYS)
                                         .setConstraints(constraints)
                                         .build()
 
-                                val workManager = WorkManager.getInstance(context)
-                                val work = workManager.enqueue(workRequest)
+                                workManager.enqueue(recurringWorkRequest)
                                 dailyDownloads = workRequest.id.toString()
                                 sharedPreferences.edit {
                                     putString(

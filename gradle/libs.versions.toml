@@ -1,5 +1,6 @@
 [versions]
 agp = "8.5.0-alpha05"
+accompanist = "0.34.0"
 coilCompose = "2.6.0"
 composeNavigation = "1.3.0"
 composeShimmer = "1.2.0"
@@ -35,7 +36,9 @@ workRuntimeKtx = "2.9.0"
 
 [libraries]
 # For Jetpack Compose.
+accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "composeFoundation" }
+androidx-runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata", version.ref = "composeFoundation" }
 coil = { module = "io.coil-kt:coil", version.ref = "coilCompose" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 coil-gif = { module = "io.coil-kt:coil-gif", version.ref = "coilCompose" }

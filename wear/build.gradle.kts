@@ -81,6 +81,8 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.compose.shimmer)
     implementation(libs.androidx.material.icons.extended)
+    implementation(libs.androidx.runtime.livedata)
+    implementation(libs.accompanist.permissions)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
