@@ -112,6 +112,7 @@ class CatDownloadWorker(appContext: Context, params: WorkerParameters) :
 
     companion object {
         const val WORK_NAME = "DownloadWorker"
+        const val PERIODIC_WORK_NAME = "PeriodicDownloadWorker"
         private const val CHANNEL_ID = "DownloadChannel"
         private const val NOTIFICATION_ID = 1
     }

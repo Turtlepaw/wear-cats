@@ -51,9 +51,12 @@ import androidx.wear.compose.material.ToggleChip
 import androidx.wear.compose.material.ToggleChipDefaults
 import androidx.wear.compose.material.scrollAway
 import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.Operation
+import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -83,6 +86,17 @@ import java.time.format.DateTimeParseException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
+fun isWorkScheduled(context: Context, uniqueWorkName: String): Boolean {
+    val workManager = WorkManager.getInstance(context)
+    val statuses = workManager.getWorkInfosForUniqueWork(uniqueWorkName).get()
+    for (workInfo in statuses) {
+        if (workInfo.state == WorkInfo.State.ENQUEUED || workInfo.state == WorkInfo.State.RUNNING) {
+            return true
+        }
+    }
+    return false
+}
+
 @SuppressLint("InlinedApi")
 @OptIn(
     ExperimentalWearFoundationApi::class, ExperimentalHorologistApi::class,
@@ -92,17 +106,14 @@ import java.util.concurrent.TimeUnit
 fun WearSettings(
     context: Context,
     isConnected: Boolean,
-    viewModel: ImageViewModel
+    viewModel: ImageViewModel?
 ) {
     SleepTheme {
         val workManager = WorkManager.getInstance(context)
         val workRequest = remember {
             OneTimeWorkRequestBuilder<CatDownloadWorker>()
-                .addTag(CatDownloadWorker.WORK_NAME) // Add a unique tag to identify the work request
+                .addTag(CatDownloadWorker.WORK_NAME)
                 .build()
-        }
-        val work = remember {
-            mutableStateOf<Operation?>(null)
         }
         val focusRequester = rememberActiveFocusRequester()
         val scalingLazyListState = rememberScalingLazyListState()
@@ -129,11 +140,11 @@ fun WearSettings(
                 } else null
             )
         }
-        val dailyDownloadId = sharedPreferences.getString(
-            Settings.DAILY_WORK_ID.getKey(),
-            null
+        val isAutoDownloadEnabled = isWorkScheduled(
+            context,
+            CatDownloadWorker.PERIODIC_WORK_NAME
         )
-        var dailyDownloads by remember { mutableStateOf<String?>(dailyDownloadId) }
+        var autoDownloadStatus by remember { mutableStateOf<Boolean>(isAutoDownloadEnabled) }
         var isDownloaded by remember { mutableStateOf(lastDownload != null) }
         LaunchedEffect(true, isDownloaded) {
 //            val images = viewModel.getImages()
@@ -163,6 +174,8 @@ fun WearSettings(
                     WorkInfo.State.SUCCEEDED -> {
                         downloadProgress = 0
                         isLoading = false
+                        isDownloaded = true
+                        lastDownload = LocalDate.now()
                     }
 
                     WorkInfo.State.FAILED -> {
@@ -308,7 +321,7 @@ fun WearSettings(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 10.dp),
-                        checked = dailyDownloads != null,
+                        checked = autoDownloadStatus,
                         onCheckedChange = { newState ->
                             if (newState) {
                                 val constraints = Constraints.Builder()
@@ -318,23 +331,20 @@ fun WearSettings(
                                     .setRequiresBatteryNotLow(true)
                                     .build()
 
-                                val recurringWorkRequest: WorkRequest =
+                                val periodicWorkRequest =
                                     PeriodicWorkRequestBuilder<CatDownloadWorker>(1, TimeUnit.DAYS)
                                         .setConstraints(constraints)
                                         .build()
 
-                                workManager.enqueue(recurringWorkRequest)
-                                dailyDownloads = workRequest.id.toString()
-                                sharedPreferences.edit {
-                                    putString(
-                                        Settings.DAILY_WORK_ID.getKey(),
-                                        workRequest.id.toString()
-                                    )
-                                    apply()
-                                }
+                                workManager.enqueueUniquePeriodicWork(
+                                    CatDownloadWorker.PERIODIC_WORK_NAME,
+                                    ExistingPeriodicWorkPolicy.UPDATE,
+                                    periodicWorkRequest
+                                )
+                                autoDownloadStatus = true
                             } else {
-                                val workId = UUID.fromString(dailyDownloads)
-                                WorkManager.getInstance(context).cancelWorkById(workId)
+                                workManager.cancelUniqueWork(CatDownloadWorker.PERIODIC_WORK_NAME)
+                                autoDownloadStatus = false
                             }
                         },
                         label = {
@@ -346,11 +356,11 @@ fun WearSettings(
                         },
                         toggleControl = {
                             Switch(
-                                checked = dailyDownloads != null,
+                                checked = autoDownloadStatus,
                                 enabled = true,
                                 modifier = Modifier.semantics {
                                     this.contentDescription =
-                                        if (dailyDownloads != null) "On" else "Off"
+                                        if (autoDownloadStatus) "On" else "Off"
                                 },
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = MaterialTheme.colors.primary,
