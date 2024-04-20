@@ -350,50 +350,50 @@ fun WearHome(
                             )
                         )
                     }
-                    item {
-                        Button(
-                            onClick = {
-                                coroutineScope.launch {
-                                    if (!isLoading) {
-                                        isLoading = true
-                                        val animalTypes = sharedPreferences.getString(
-                                            Settings.ANIMALS.getKey(),
-                                            Settings.ANIMALS.getDefault()
-                                        )
-                                        val types = enumFromJSON(animalTypes)
-                                        if (currentImageIndex == animalPhotos.size.minus(1)) {
-                                            if (isConnected) {
-                                                safelyFetch(types) { data ->
-                                                    currentImageIndex = 0
-                                                    animalPhotos = data.map {
-                                                        it.url
-                                                    }
-                                                    isLoading = false
-                                                }
-                                            } else {
-                                                animalPhotos = animalPhotos.shuffled()
-                                                currentImageIndex = 0
-                                            }
-                                        } else {
-                                            currentImageIndex += 1
-                                        }
-                                        isLoading = false
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = MaterialTheme.colors.primary
-                            ),
-                            enabled = !isLoading
-                        ) {
-                            if (isLoading) {
-                                CircularProgressIndicator(indicatorColor = MaterialTheme.colors.primary)
-                            } else {
-                                Text(text = "Refresh")
-                            }
-                        }
-                    }
+//                    item {
+//                        Button(
+//                            onClick = {
+//                                coroutineScope.launch {
+//                                    if (!isLoading) {
+//                                        isLoading = true
+//                                        val animalTypes = sharedPreferences.getString(
+//                                            Settings.ANIMALS.getKey(),
+//                                            Settings.ANIMALS.getDefault()
+//                                        )
+//                                        val types = enumFromJSON(animalTypes)
+//                                        if (currentImageIndex == animalPhotos.size.minus(1)) {
+//                                            if (isConnected) {
+//                                                safelyFetch(types) { data ->
+//                                                    currentImageIndex = 0
+//                                                    animalPhotos = data.map {
+//                                                        it.url
+//                                                    }
+//                                                    isLoading = false
+//                                                }
+//                                            } else {
+//                                                animalPhotos = animalPhotos.shuffled()
+//                                                currentImageIndex = 0
+//                                            }
+//                                        } else {
+//                                            currentImageIndex += 1
+//                                        }
+//                                        isLoading = false
+//                                    }
+//                                }
+//                            },
+//                            modifier = Modifier.fillMaxWidth(),
+//                            colors = ButtonDefaults.buttonColors(
+//                                backgroundColor = MaterialTheme.colors.primary
+//                            ),
+//                            enabled = !isLoading
+//                        ) {
+//                            if (isLoading) {
+//                                CircularProgressIndicator(indicatorColor = MaterialTheme.colors.primary)
+//                            } else {
+//                                Text(text = "Refresh")
+//                            }
+//                        }
+//                    }
 
                     item {
                         SettingsButton(openSettings)
