@@ -33,7 +33,8 @@ enum class Settings(private val key: String, private val default: Any?) {
     BATTERY_SAVER("battery_saver", true),
     ANIMALS("animals", enumToJSON(listOf(Animals.CATS, Animals.BUNNIES))),
     DAILY_WORK_ID("download_work_id", null),
-    LAST_DOWNLOAD("last_download", null);
+    LAST_DOWNLOAD("last_download", null),
+    USER_WALKTHROUGH_COMPLETE("user_walkthrough", false);
 
     fun getKey(): String {
         return key

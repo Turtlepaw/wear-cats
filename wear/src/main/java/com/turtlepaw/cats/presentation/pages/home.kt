@@ -25,8 +25,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -35,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.edit
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.foundation.rememberActiveFocusRequester
@@ -145,6 +150,10 @@ fun WearHome(
         val sharedPreferences = context.getSharedPreferences(
             SettingsBasics.SHARED_PREFERENCES.getKey(),
             SettingsBasics.SHARED_PREFERENCES.getMode()
+        )
+        var userWalkthroughComplete = sharedPreferences.getBoolean(
+            Settings.USER_WALKTHROUGH_COMPLETE.getKey(),
+            Settings.USER_WALKTHROUGH_COMPLETE.getDefaultAsBoolean()
         )
         // Suspended functions
         LaunchedEffect(state, isConnected) {
@@ -260,6 +269,17 @@ fun WearHome(
                                     .clip(RoundedCornerShape(14.dp))
                                     .clickable {
                                         coroutineScope.launch {
+                                            if (!userWalkthroughComplete) {
+                                                sharedPreferences.edit {
+                                                    putBoolean(
+                                                        Settings.USER_WALKTHROUGH_COMPLETE.getKey(),
+                                                        true
+                                                    )
+                                                    apply()
+                                                }
+
+                                                userWalkthroughComplete = true
+                                            }
                                             if (!isLoading) {
                                                 isLoading = true
                                                 val animalTypes = sharedPreferences.getString(
@@ -298,7 +318,27 @@ fun WearHome(
                                             .shimmer()
                                     )
                                 } else {
-                                    SubcomposeAsyncImageContent()
+                                    SubcomposeAsyncImageContent(
+                                        modifier = if (!userWalkthroughComplete) Modifier.blur(
+                                            20.dp
+                                        ) else Modifier
+                                    )
+                                    if (!userWalkthroughComplete) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color.Transparent)
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "Tap the image to refresh",
+                                                color = Color.White,
+                                                textAlign = TextAlign.Center,
+                                                style = MaterialTheme.typography.body1
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
