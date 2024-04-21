@@ -43,14 +43,6 @@ class ImageViewModel(private val dataStore: DataStore<Preferences>) : ViewModel(
         val IMAGE_KEY = stringSetPreferencesKey("images")
     }
 
-    private fun getImageUri(inContext: Context, inImage: Bitmap): Uri {
-        val bytes = ByteArrayOutputStream()
-        inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes)
-        val path =
-            MediaStore.Images.Media.insertImage(inContext.contentResolver, inImage, "Title", null)
-        return Uri.parse(path)
-    }
-
     suspend fun downloadImages(
         context: Context,
         onProgressUpdate: suspend (Int, Int) -> Unit
@@ -58,7 +50,7 @@ class ImageViewModel(private val dataStore: DataStore<Preferences>) : ViewModel(
         dataStore.edit { preferences ->
             val images = mutableSetOf<String>()
             val limit = DOWNLOAD_LIMIT
-            var imagesDownloaded = 0
+            val batchSizeLimit = 10 // Maximum batch size limit
 
             val animalTypes = context.getSharedPreferences(
                 SettingsBasics.SHARED_PREFERENCES.getKey(),
@@ -69,21 +61,33 @@ class ImageViewModel(private val dataStore: DataStore<Preferences>) : ViewModel(
             )
             val types = enumFromJSON(animalTypes)
 
-            while (imagesDownloaded < limit) {
-                val batchSize = min(10, limit - imagesDownloaded)
-                val photos = fetchPhotos(batchSize, types)
+            var imagesDownloaded = 0 // Initialize imagesDownloaded here
 
-                photos.forEach { photo ->
-                    val imageData = context.imageLoader.loadImage(context, photo.url, 500)
-                    if (imageData != null) {
-                        images.add(
-                            encodeToBase64(imageData, CompressFormat.WEBP_LOSSLESS, 80)
-                        )
-                        imagesDownloaded++
-                        onProgressUpdate(imagesDownloaded, limit)
+            val typeLimits = mutableMapOf<Animals, Int>()
+            types.forEach { type ->
+                // Set maximum limit for each animal type
+                typeLimits[type] = if (type == Animals.BUNNIES) 1 else limit / types.size
+            }
+
+            while (imagesDownloaded < limit) {
+                types.forEach { type ->
+                    val remainingLimit = limit - imagesDownloaded
+                    val count = min(min(typeLimits[type]!!, remainingLimit), batchSizeLimit)
+                    val photos = fetchPhotos(count, listOf(type))
+
+                    photos.forEach { photo ->
+                        val imageData = context.imageLoader.loadImage(context, photo.url, 500)
+                        if (imageData != null) {
+                            images.add(
+                                encodeToBase64(imageData, CompressFormat.WEBP_LOSSLESS, 80)
+                            )
+                            imagesDownloaded++
+                            onProgressUpdate(imagesDownloaded, limit)
+                        }
                     }
                 }
             }
+
             Log.d("Worker", "Done at $imagesDownloaded")
             preferences[IMAGE_KEY] = images
         }

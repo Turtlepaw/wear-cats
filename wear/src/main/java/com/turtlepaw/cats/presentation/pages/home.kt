@@ -33,10 +33,14 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
@@ -346,7 +350,7 @@ fun WearHome(
                     item {
                         Spacer(
                             modifier = Modifier.padding(
-                                5.dp
+                                2.dp
                             )
                         )
                     }
@@ -402,20 +406,28 @@ fun WearHome(
                     if (!isConnected) {
                         item {
                             Row(
-                                modifier = Modifier.padding(top = 5.dp),
+                                modifier = Modifier.padding(top = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                val style = MaterialTheme.typography.title3
+                                val fontSize: TextUnit = style.fontSize
+                                val lineHeightDp: Dp = with(LocalDensity.current) {
+                                    fontSize.toDp()
+                                }
                                 Icon(
                                     painter = painterResource(id = R.drawable.round_cloud_off_24),
                                     contentDescription = "Offline",
                                     tint = MaterialTheme.colors.primary,
+                                    modifier = Modifier.size(lineHeightDp)
                                 )
 
                                 Spacer(modifier = Modifier.padding(3.dp))
 
                                 Text(
                                     text = "Offline",
-                                    fontSize = 18.sp
+                                    //fontSize = fontSize,
+                                    style = style,
+                                    fontWeight = FontWeight.Normal
                                 )
                             }
                         }
