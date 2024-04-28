@@ -219,15 +219,15 @@ fun WearSettings(
                 ),
                 scrollableState = scalingLazyListState,
                 verticalAlignment = Arrangement.spacedBy(
-                    space = 4.dp,
+                    space = 0.dp,
                     alignment = Alignment.Top,
                 )
             ) {
                 item {
-                    Text(text = "Downloads")
-                }
-                item {
-                    Spacer(modifier = Modifier.padding(2.dp))
+                    Text(
+                        text = "Downloads",
+                        modifier = Modifier.padding(bottom = 10.dp)
+                    )
                 }
                 item {
                     Button(
@@ -268,8 +268,7 @@ fun WearSettings(
                             }
                         },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp),
+                            .fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             backgroundColor = MaterialTheme.colors.primary
                         ),
@@ -314,13 +313,12 @@ fun WearSettings(
                     }
                 }
                 item {
-                    Spacer(modifier = Modifier.padding(2.dp))
+                    Spacer(modifier = Modifier.padding(4.dp))
                 }
                 item {
                     ToggleChip(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp),
+                            .fillMaxWidth(),
                         checked = autoDownloadStatus,
                         onCheckedChange = { newState ->
                             if (newState) {
@@ -376,24 +374,19 @@ fun WearSettings(
                 }
                 if (lastDownload != null) {
                     item {
-                        Spacer(modifier = Modifier.padding(1.dp))
-                    }
-                    item {
                         val dateFormatter = DateTimeFormatter.ofPattern("E d")
                         Text(
                             text = "Last Downloaded\n${dateFormatter.format(lastDownload)}",
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(vertical = 7.dp)
                         )
                     }
                 }
                 item {
-                    Spacer(modifier = Modifier.padding(2.dp))
-                }
-                item {
-                    Text(text = "Animals")
-                }
-                item {
-                    Spacer(modifier = Modifier.padding(2.dp))
+                    Text(
+                        text = "Animals",
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
                 }
                 items(Animals.entries.size) { current ->
                     val item = Animals.entries[current]
@@ -401,7 +394,7 @@ fun WearSettings(
                     ToggleChip(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 10.dp),
+                            .padding(vertical = 3.dp),
                         checked = itemState,
                         onCheckedChange = { newState ->
                             if (animalsEnabled.size > 1 || newState) {
