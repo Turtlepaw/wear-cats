@@ -19,30 +19,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.lifecycle.ViewModelProvider
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import com.turtlepaw.cats.database.AppDatabase
+import com.turtlepaw.cats.presentation.pages.Favorites
 import com.turtlepaw.cats.presentation.pages.WearHome
 import com.turtlepaw.cats.presentation.pages.settings.WearSettings
 import com.turtlepaw.cats.presentation.theme.SleepTheme
-import com.turtlepaw.cats.utils.ImageViewModel
-import com.turtlepaw.cats.utils.ImageViewModelFactory
 import com.turtlepaw.cats.utils.SettingsBasics
 
 
 enum class Routes(private val route: String) {
     HOME("/home"),
     SETTINGS("/settings"),
-    GOAL_PICKER("/goal-picker"),
-    SUN_PICKER("/sun-picker"),
-    HISTORY("/history"),
-    CLOCKWORK("/clockwork-toolkit");
+    FAVORITES("/favorites");
 
     fun getRoute(query: String? = null): String {
         return if (query != null) {
@@ -55,8 +50,8 @@ enum class Routes(private val route: String) {
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = SettingsBasics.HISTORY_STORAGE_BASE.getKey())
 
 class MainActivity : ComponentActivity() {
-    private lateinit var imageViewModelFactory: ImageViewModelFactory
-    private lateinit var imageViewModel: ImageViewModel
+    private lateinit var database: AppDatabase
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
@@ -64,19 +59,12 @@ class MainActivity : ComponentActivity() {
 
         setTheme(android.R.style.Theme_DeviceDefault)
 
-        // Initialize your BedtimeViewModelFactory here
-        imageViewModelFactory = ImageViewModelFactory(dataStore)
-
-        // Use the factory to create the BedtimeViewModel
-        imageViewModel = ViewModelProvider(
-            this,
-            imageViewModelFactory
-        )[ImageViewModel::class.java]
+        database = AppDatabase.getDatabase(this)
 
         setContent {
             WearPages(
                 this,
-                imageViewModel
+                database
             )
         }
     }
@@ -93,13 +81,13 @@ fun isNetworkConnected(context: Context): Boolean {
 @Composable
 fun WearPages(
     context: Context,
-    viewModel: ImageViewModel
+    database: AppDatabase
 ) {
     SleepTheme {
         // Creates a navigation controller for our pages
         val navController = rememberSwipeDismissableNavController()
         var isConnected by remember { mutableStateOf<Boolean>(true) }
-        val lifecycleOwner = LocalLifecycleOwner.current
+        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
         val state by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
         // Suspended functions
         LaunchedEffect(state) {
@@ -114,17 +102,19 @@ fun WearPages(
                 WearHome(
                     context,
                     isConnected,
-                    viewModel
+                    database
                 ) {
-                    navController.navigate(Routes.SETTINGS.getRoute())
+                    navController.navigate(it.getRoute())
                 }
             }
             composable(Routes.SETTINGS.getRoute()) {
                 WearSettings(
                     context,
-                    isConnected,
-                    viewModel
+                    isConnected
                 )
+            }
+            composable(Routes.FAVORITES.getRoute()) {
+                Favorites(context, database)
             }
         }
     }

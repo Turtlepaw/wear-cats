@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Animals</string>
+    <string name="my_pet_name">My Pet</string>
     <!--
     This string is used for square devices and overridden by hello_world in
     values-round/strings.xml for round devices.
@@ -7,4 +8,7 @@
     <string name="hello_world">From the Square world,\nHello, %1$s!</string>
     <string name="tile_label">Daily Animal</string>
     <string name="complication_label">Animals</string>
+
+    <string name="shortcut_short_label">Specific</string>
+    <string name="shortcut_long_label">Open Specific Screen</string>
 </resources>

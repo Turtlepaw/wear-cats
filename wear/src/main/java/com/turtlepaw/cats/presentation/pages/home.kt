@@ -3,9 +3,12 @@ package com.turtlepaw.cats.presentation.pages
 import AnimalPhoto
 import AnimalPhotoSerializer
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Bitmap.CompressFormat
 import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,12 +28,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -42,7 +42,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
@@ -65,22 +64,23 @@ import coil.compose.SubcomposeAsyncImageContent
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.cats.R
+import com.turtlepaw.cats.database.AppDatabase
+import com.turtlepaw.cats.database.Favorite
+import com.turtlepaw.cats.database.downloadImage
+import com.turtlepaw.cats.presentation.Routes
 import com.turtlepaw.cats.presentation.components.ItemsListWithModifier
-import com.turtlepaw.cats.presentation.dataStore
 import com.turtlepaw.cats.presentation.theme.SleepTheme
 import com.turtlepaw.cats.utils.Animals
-import com.turtlepaw.cats.utils.ImageViewModel
 import com.turtlepaw.cats.utils.Settings
 import com.turtlepaw.cats.utils.SettingsBasics
 import com.turtlepaw.cats.utils.decodeByteArray
+import com.turtlepaw.cats.utils.encodeToBase64
 import com.turtlepaw.cats.utils.enumFromJSON
 import com.valentinilk.shimmer.shimmer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -89,6 +89,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.LocalDateTime
 
 private const val tag = "CatImageFetch"
 
@@ -133,10 +134,16 @@ fun SettingsButton(openSettings: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class)
+@OptIn(
+    ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class,
+    ExperimentalFoundationApi::class
+)
 @Composable
 fun WearHome(
-    context: Context, isConnected: Boolean, viewModel: ImageViewModel, openSettings: () -> Unit
+    context: Context,
+    isConnected: Boolean,
+    database: AppDatabase,
+    open: (route: Routes) -> Unit
 ) {
     SleepTheme {
         val focusRequester = rememberActiveFocusRequester()
@@ -145,6 +152,7 @@ fun WearHome(
         var animalPhotos by remember { mutableStateOf<List<Any>>(emptyList()) }
         var currentImageIndex by remember { mutableIntStateOf(0) }
         var isLoading by remember { mutableStateOf<Boolean>(true) }
+        var isFavoriting by remember { mutableStateOf<Boolean>(false) }
         var lastConnectedState by remember { mutableStateOf<Boolean>(isConnected) }
         var error by remember { mutableStateOf<String?>(null) }
         val isOfflineAvailable = true
@@ -178,9 +186,9 @@ fun WearHome(
                         isLoading = false
                     }
                 } else {
-                    val offlineImages = viewModel.getImages()
+                    val offlineImages = database.imageDao().getImages()
                     animalPhotos = offlineImages.map {
-                        decodeByteArray(it)
+                        decodeByteArray(it.value)
                     }.shuffled()
                     if (offlineImages.isEmpty()) error =
                         if (isOfflineAvailable) "You haven't downloaded any offline images"
@@ -227,7 +235,9 @@ fun WearHome(
                         )
                     }
                     item {
-                        SettingsButton(openSettings)
+                        SettingsButton {
+                            open(Routes.SETTINGS)
+                        }
                     }
                 } else if (animalPhotos.isNotEmpty()) {
                     item {
@@ -271,46 +281,89 @@ fun WearHome(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .clip(RoundedCornerShape(14.dp))
-                                    .clickable {
-                                        coroutineScope.launch {
-                                            if (!userWalkthroughComplete) {
-                                                sharedPreferences.edit {
-                                                    putBoolean(
-                                                        Settings.USER_WALKTHROUGH_COMPLETE.getKey(),
-                                                        true
+                                    .combinedClickable(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                if (!isLoading) {
+                                                    isLoading = true
+                                                    val animalTypes = sharedPreferences.getString(
+                                                        Settings.ANIMALS.getKey(),
+                                                        Settings.ANIMALS.getDefault()
                                                     )
-                                                    apply()
-                                                }
-
-                                                userWalkthroughComplete = true
-                                            }
-                                            if (!isLoading) {
-                                                isLoading = true
-                                                val animalTypes = sharedPreferences.getString(
-                                                    Settings.ANIMALS.getKey(),
-                                                    Settings.ANIMALS.getDefault()
-                                                )
-                                                val types = enumFromJSON(animalTypes)
-                                                if (currentImageIndex == animalPhotos.size.minus(1)) {
-                                                    if (isConnected) {
-                                                        safelyFetch(types) { data ->
-                                                            currentImageIndex = 0
-                                                            animalPhotos = data.map {
-                                                                it.url
+                                                    val types = enumFromJSON(animalTypes)
+                                                    if (currentImageIndex == animalPhotos.size.minus(
+                                                            1
+                                                        )
+                                                    ) {
+                                                        if (isConnected) {
+                                                            safelyFetch(types) { data ->
+                                                                currentImageIndex = 0
+                                                                animalPhotos = data.map {
+                                                                    it.url
+                                                                }
+                                                                isLoading = false
                                                             }
-                                                            isLoading = false
+                                                        } else {
+                                                            animalPhotos = animalPhotos.shuffled()
+                                                            currentImageIndex = 0
                                                         }
                                                     } else {
-                                                        animalPhotos = animalPhotos.shuffled()
-                                                        currentImageIndex = 0
+                                                        currentImageIndex += 1
                                                     }
-                                                } else {
-                                                    currentImageIndex += 1
+                                                    isLoading = false
                                                 }
-                                                isLoading = false
+                                            }
+                                        },
+                                        onLongClick = {
+                                            coroutineScope.launch {
+                                                if (!userWalkthroughComplete) {
+                                                    sharedPreferences.edit {
+                                                        putBoolean(
+                                                            Settings.USER_WALKTHROUGH_COMPLETE.getKey(),
+                                                            true
+                                                        )
+                                                        apply()
+                                                    }
+
+                                                    userWalkthroughComplete = true
+                                                }
+                                                if (!isLoading) {
+                                                    val current =
+                                                        animalPhotos[currentImageIndex]
+                                                    val data = when (current) {
+                                                        is ByteArray -> encodeToBase64(
+                                                            animalPhotos[currentImageIndex] as Bitmap,
+                                                            CompressFormat.WEBP_LOSSLESS,
+                                                            80
+                                                        )
+
+                                                        is String -> {
+                                                            downloadImage(current, context)
+                                                        }
+
+                                                        else -> null
+                                                    }
+
+                                                    if (data != null) {
+                                                        database
+                                                            .favoritesDao()
+                                                            .insertFavorite(
+                                                                Favorite(
+                                                                    timestamp = LocalDateTime.now(),
+                                                                    value = data
+                                                                )
+                                                            )
+
+                                                        isFavoriting = true
+
+                                                        delay(2000)
+
+                                                        isFavoriting = false
+                                                    }
+                                                }
                                             }
                                         }
-                                    }
+                                    )
                             ) {
                                 val paintState = painter.state
                                 if (paintState is AsyncImagePainter.State.Loading || paintState is AsyncImagePainter.State.Error) {
@@ -323,7 +376,7 @@ fun WearHome(
                                     )
                                 } else {
                                     SubcomposeAsyncImageContent(
-                                        modifier = if (!userWalkthroughComplete) Modifier.blur(
+                                        modifier = if (!userWalkthroughComplete || isFavoriting) Modifier.blur(
                                             20.dp
                                         ) else Modifier
                                     )
@@ -340,6 +393,20 @@ fun WearHome(
                                                 color = Color.White,
                                                 textAlign = TextAlign.Center,
                                                 style = MaterialTheme.typography.body1
+                                            )
+                                        }
+                                    } else if(isFavoriting){
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color.Transparent)
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.favorite),
+                                                contentDescription = "Favorite",
+                                                modifier = Modifier.size(50.dp)
                                             )
                                         }
                                     }
@@ -400,7 +467,15 @@ fun WearHome(
 //                    }
 
                     item {
-                        SettingsButton(openSettings)
+                        SettingsButton {
+                            open(Routes.SETTINGS)
+                        }
+                    }
+
+                    item {
+                        FavoritesButton {
+                            open(Routes.FAVORITES)
+                        }
                     }
 
                     if (!isConnected) {
@@ -498,6 +573,6 @@ suspend fun fetchPhotos(limit: Int = 1, types: List<Animals>): List<AnimalPhoto>
 @Composable
 fun DefaultPreview() {
     WearHome(
-        LocalContext.current, false, viewModel = ImageViewModel(LocalContext.current.dataStore)
+        LocalContext.current, false, database = AppDatabase.getDatabase(LocalContext.current)
     ) {}
 }

@@ -36,13 +36,16 @@ fun decodeByteArray(input: String): ByteArray {
     return Base64.getDecoder().decode(input)
 }
 
-val DOWNLOAD_LIMIT = 100
+val DOWNLOAD_LIMIT = 150
 
 class ImageViewModel(private val dataStore: DataStore<Preferences>) : ViewModel() {
     private object PreferencesKeys {
         val IMAGE_KEY = stringSetPreferencesKey("images")
     }
 
+    @Deprecated(
+        message = "Deprecated in favor of Room, use AppDatabase#download()"
+    )
     suspend fun downloadImages(
         context: Context,
         onProgressUpdate: suspend (Int, Int) -> Unit

@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
     kotlin("plugin.serialization") version "1.9.22"
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -13,8 +14,8 @@ android {
         applicationId = "com.turtlepaw.cats"
         minSdk = 30
         targetSdk = 33
-        versionCode = 2
-        versionName = "1.0"
+        versionCode = 4
+        versionName = "1.1"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -28,6 +29,9 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("debug")
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
     }
 
@@ -43,7 +47,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.5.12"
     }
     packaging {
         resources {
@@ -53,6 +57,20 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.health.services.client)
+
+    implementation("com.google.guava:guava:31.0.1-android")
+
+    // To use CallbackToFutureAdapter
+    implementation("androidx.concurrent:concurrent-futures:1.1.0")
+
+    // Kotlin
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.6.0")
+
+    // Room
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
+
     implementation(libs.play.services.wearable)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)

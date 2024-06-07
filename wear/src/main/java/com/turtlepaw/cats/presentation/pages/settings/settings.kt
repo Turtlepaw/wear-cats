@@ -105,8 +105,7 @@ fun isWorkScheduled(context: Context, uniqueWorkName: String): Boolean {
 @Composable
 fun WearSettings(
     context: Context,
-    isConnected: Boolean,
-    viewModel: ImageViewModel?
+    isConnected: Boolean
 ) {
     SleepTheme {
         val workManager = WorkManager.getInstance(context)
@@ -121,6 +120,7 @@ fun WearSettings(
         var isLoading by remember { mutableStateOf(false) }
         var animalsEnabled by remember { mutableStateOf<List<Animals>>(emptyList()) }
         var downloadProgress by remember { mutableStateOf<Int>(0) }
+        val isDownloadsEnabled = true
         val sharedPreferences = context.getSharedPreferences(
             SettingsBasics.SHARED_PREFERENCES.getKey(),
             SettingsBasics.SHARED_PREFERENCES.getMode()
@@ -223,163 +223,138 @@ fun WearSettings(
                     alignment = Alignment.Top,
                 )
             ) {
-                item {
-                    Text(
-                        text = "Downloads",
-                        modifier = Modifier.padding(bottom = 10.dp)
-                    )
-                }
-                item {
-                    Button(
-                        onClick = {
-                            coroutineScope.launch {
-                                isLoading = true
-                                //viewModel.downloadImages(context)
-//                                val workRequest =
-//                                    OneTimeWorkRequestBuilder<CatDownloadWorker>().addTag(
-//                                        CatDownloadWorker.WORK_NAME
-//                                    ) // Add a unique tag to identify the work request
-//                                        .build()
-//                                val workManager = WorkManager.getInstance(context)
-                                //work.value = workManager.enqueue(workRequest)
-                                if (notificationPermissionState.status.isGranted) {
-                                    workId = workRequest.id
-                                    workManager.enqueue(workRequest)
-                                } else notificationPermissionState.launchPermissionRequest()
-//                                workManager.getWorkInfoByIdLiveData(workRequest.id)
-//                                    .observeForever { workInfo ->
-//                                        if (workInfo != null && workInfo.state == WorkInfo.State.RUNNING) {
-//                                            val progress = workInfo.progress
-//                                            val value = progress.getInt("Progress", 0)
-//                                            Log.d(
-//                                                "DownloadProgress",
-//                                                "Received new progress of $value"
-//                                            )
-//                                            downloadProgress = value
-//                                        }
-//                                    }
-//                                workManager.getWorkInfoByIdLiveData(workRequest.id)
-//                                    .observeForever { workInfo ->
-//                                        if (workInfo != null && workInfo.state == WorkInfo.State.SUCCEEDED) {
-//                                            isLoading = false
-//                                            lastDownload = LocalDate.now()
-//                                        }
-//                                    }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = MaterialTheme.colors.primary
-                        ),
-                        enabled = !isLoading && isConnected
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(modifier = Modifier.padding(end = 10.dp)) {
-                                if (isLoading) {
-                                    Box(modifier = Modifier.size(25.dp)) {
-                                        if (downloadProgress == 0) {
-                                            CircularProgressIndicator(
-                                                indicatorColor = MaterialTheme.colors.primary
-                                            )
-                                        } else {
-                                            CircularProgressIndicator(
-                                                progress = (downloadProgress.toFloat() / DOWNLOAD_LIMIT.toFloat()),
-                                                indicatorColor = MaterialTheme.colors.primary
-                                            )
-                                        }
-                                    }
-                                } else if (isDownloaded) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.check),
-                                        contentDescription = "Downloaded for Offline",
-                                        tint = MaterialTheme.colors.onPrimary,
-                                    )
-                                } else {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.offline_download),
-                                        contentDescription = "Download for Offline",
-                                        tint = MaterialTheme.colors.onPrimary,
-                                    )
+                if(isDownloadsEnabled){
+                    item {
+                        Text(
+                            text = "Downloads",
+                            modifier = Modifier.padding(bottom = 10.dp)
+                        )
+                    }
+                    item {
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    isLoading = true
+                                    if (notificationPermissionState.status.isGranted) {
+                                        workId = workRequest.id
+                                        workManager.enqueue(workRequest)
+                                    } else notificationPermissionState.launchPermissionRequest()
                                 }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = MaterialTheme.colors.primary
+                            ),
+                            enabled = !isLoading && isConnected
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(modifier = Modifier.padding(end = 10.dp)) {
+                                    if (isLoading) {
+                                        Box(modifier = Modifier.size(25.dp)) {
+                                            if (downloadProgress == 0) {
+                                                CircularProgressIndicator(
+                                                    indicatorColor = MaterialTheme.colors.primary
+                                                )
+                                            } else {
+                                                CircularProgressIndicator(
+                                                    progress = (downloadProgress.toFloat() / DOWNLOAD_LIMIT.toFloat()),
+                                                    indicatorColor = MaterialTheme.colors.primary
+                                                )
+                                            }
+                                        }
+                                    } else if (isDownloaded) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.check),
+                                            contentDescription = "Downloaded for Offline",
+                                            tint = MaterialTheme.colors.onPrimary,
+                                        )
+                                    } else {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.offline_download),
+                                            contentDescription = "Download for Offline",
+                                            tint = MaterialTheme.colors.onPrimary,
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = if (!isConnected) "Unavailable" else if (isLoading) "Downloading" else if (isDownloaded) "Downloaded" else "Download",
+                                    color = if (isLoading || !isConnected) MaterialTheme.colors.primary else MaterialTheme.colors.onPrimary
+                                )
                             }
-                            Text(
-                                text = if (!isConnected) "Unavailable" else if (isLoading) "Downloading" else if (isDownloaded) "Downloaded" else "Download",
-                                color = if (isLoading || !isConnected) MaterialTheme.colors.primary else MaterialTheme.colors.onPrimary
-                            )
                         }
                     }
-                }
-                item {
-                    Spacer(modifier = Modifier.padding(4.dp))
-                }
-                item {
-                    ToggleChip(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        checked = autoDownloadStatus,
-                        onCheckedChange = { newState ->
-                            if (newState) {
-                                val constraints = Constraints.Builder()
-                                    .setRequiredNetworkType(NetworkType.UNMETERED)
-                                    .setRequiresCharging(true)
-                                    .setRequiresStorageNotLow(false)
-                                    .setRequiresBatteryNotLow(true)
-                                    .build()
-
-                                val periodicWorkRequest =
-                                    PeriodicWorkRequestBuilder<CatDownloadWorker>(1, TimeUnit.DAYS)
-                                        .setConstraints(constraints)
+                    item {
+                        Spacer(modifier = Modifier.padding(4.dp))
+                    }
+                    item {
+                        ToggleChip(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            checked = autoDownloadStatus,
+                            onCheckedChange = { newState ->
+                                if (newState) {
+                                    val constraints = Constraints.Builder()
+                                        .setRequiredNetworkType(NetworkType.UNMETERED)
+                                        .setRequiresCharging(true)
+                                        .setRequiresStorageNotLow(false)
+                                        .setRequiresBatteryNotLow(true)
                                         .build()
 
-                                workManager.enqueueUniquePeriodicWork(
-                                    CatDownloadWorker.PERIODIC_WORK_NAME,
-                                    ExistingPeriodicWorkPolicy.UPDATE,
-                                    periodicWorkRequest
+                                    val periodicWorkRequest =
+                                        PeriodicWorkRequestBuilder<CatDownloadWorker>(1, TimeUnit.DAYS)
+                                            .setConstraints(constraints)
+                                            .build()
+
+                                    workManager.enqueueUniquePeriodicWork(
+                                        CatDownloadWorker.PERIODIC_WORK_NAME,
+                                        ExistingPeriodicWorkPolicy.UPDATE,
+                                        periodicWorkRequest
+                                    )
+                                    autoDownloadStatus = true
+                                } else {
+                                    workManager.cancelUniqueWork(CatDownloadWorker.PERIODIC_WORK_NAME)
+                                    autoDownloadStatus = false
+                                }
+                            },
+                            label = {
+                                Text(
+                                    "Auto Download",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
-                                autoDownloadStatus = true
-                            } else {
-                                workManager.cancelUniqueWork(CatDownloadWorker.PERIODIC_WORK_NAME)
-                                autoDownloadStatus = false
-                            }
-                        },
-                        label = {
+                            },
+                            toggleControl = {
+                                Switch(
+                                    checked = autoDownloadStatus,
+                                    enabled = true,
+                                    modifier = Modifier.semantics {
+                                        this.contentDescription =
+                                            if (autoDownloadStatus) "On" else "Off"
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = MaterialTheme.colors.primary,
+                                    )
+                                )
+                            },
+                            enabled = true,
+                            colors = ToggleChipDefaults.toggleChipColors(
+                                checkedEndBackgroundColor = MaterialTheme.colors.surface,
+                                uncheckedEndBackgroundColor = MaterialTheme.colors.surface
+                            )
+                        )
+                    }
+                    if (lastDownload != null) {
+                        item {
+                            val dateFormatter = DateTimeFormatter.ofPattern("E d")
                             Text(
-                                "Auto Download",
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                text = "Last Downloaded\n${dateFormatter.format(lastDownload)}",
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 7.dp)
                             )
-                        },
-                        toggleControl = {
-                            Switch(
-                                checked = autoDownloadStatus,
-                                enabled = true,
-                                modifier = Modifier.semantics {
-                                    this.contentDescription =
-                                        if (autoDownloadStatus) "On" else "Off"
-                                },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = MaterialTheme.colors.primary,
-                                )
-                            )
-                        },
-                        enabled = true,
-                        colors = ToggleChipDefaults.toggleChipColors(
-                            checkedEndBackgroundColor = MaterialTheme.colors.surface,
-                            uncheckedEndBackgroundColor = MaterialTheme.colors.surface
-                        )
-                    )
-                }
-                if (lastDownload != null) {
-                    item {
-                        val dateFormatter = DateTimeFormatter.ofPattern("E d")
-                        Text(
-                            text = "Last Downloaded\n${dateFormatter.format(lastDownload)}",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(vertical = 7.dp)
-                        )
+                        }
                     }
                 }
                 item {
