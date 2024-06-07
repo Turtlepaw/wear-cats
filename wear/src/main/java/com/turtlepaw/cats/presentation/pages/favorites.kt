@@ -22,8 +22,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.RevealValue
@@ -32,6 +35,7 @@ import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.foundation.rememberRevealState
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.ExperimentalWearMaterialApi
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
@@ -53,6 +57,7 @@ import com.turtlepaw.cats.R
 import com.turtlepaw.cats.database.AppDatabase
 import com.turtlepaw.cats.presentation.components.ItemsListWithModifier
 import com.turtlepaw.cats.presentation.theme.SleepTheme
+import com.turtlepaw.cats.utils.DOWNLOAD_LIMIT
 import com.turtlepaw.cats.utils.decodeByteArray
 import com.valentinilk.shimmer.shimmer
 import kotlinx.coroutines.launch
@@ -67,17 +72,19 @@ fun FavoritesButton(openSettings: () -> Unit) {
         )
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize()
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.favorite),
-                contentDescription = "Favorite",
-                modifier = Modifier.size(20.dp)
+            Box(modifier = Modifier.padding(end = 10.dp)) {
+                Icon(
+                    painter = painterResource(id = R.drawable.favorite),
+                    contentDescription = "Favorite",
+                    tint = MaterialTheme.colors.onPrimary,
+                )
+            }
+            Text(
+                text = "Favorites",
+                color = MaterialTheme.colors.onPrimary
             )
-            Spacer(modifier = Modifier.padding(3.dp))
-            Text(text = "Favorites")
         }
     }
 }
@@ -96,10 +103,12 @@ fun Favorites(
         val scalingLazyListState = rememberScalingLazyListState()
         val coroutineScope = rememberCoroutineScope()
         var animalPhotos by remember { mutableStateOf<List<Pair<Int, ByteArray>>>(emptyList()) }
+        var isLoading by remember { mutableStateOf(true) }
         LaunchedEffect(Unit) {
             animalPhotos = database.favoritesDao().getFavorites().map {
                 it.id to decodeByteArray(it.value)
             }
+            isLoading = false
         }
 
         Box(
@@ -118,9 +127,10 @@ fun Favorites(
             ) {
                 if (animalPhotos.isNotEmpty()) {
                     item {
-                        Spacer(
+                        Text(
+                            text = "${animalPhotos.size} favorite${if (animalPhotos.size > 1) "s" else ""}",
                             modifier = Modifier.padding(
-                                top = 42.dp, bottom = 5.dp
+                                top = 30.dp, bottom = 10.dp
                             )
                         )
                     }
@@ -139,9 +149,10 @@ fun Favorites(
                                         coroutineScope.launch {
                                             database.favoritesDao()
                                                 .deleteFavoriteById(animalPhotos[it].first)
-                                            animalPhotos = database.favoritesDao().getFavorites().map {
-                                                it.id to decodeByteArray(it.value)
-                                            }
+                                            animalPhotos =
+                                                database.favoritesDao().getFavorites().map {
+                                                    it.id to decodeByteArray(it.value)
+                                                }
                                             revealState.snapTo(RevealValue.Covered)
                                         }
                                     }
@@ -158,74 +169,85 @@ fun Favorites(
                                 }
                             }
                         ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(128.dp)
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(14.dp))
+//                                    .shimmer()
+//                                    .background(MaterialTheme.colors.secondary)
+                                        .background(MaterialTheme.colors.background)
+                                        .shimmer()
+                                )
+
+                                SubcomposeAsyncImage(
+                                    model = animalPhotos[it].second,
+                                    contentDescription = "Favorite ${it + 1}",
+                                    contentScale = ContentScale.FillBounds,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(14.dp))
+                                ) {
+                                    val paintState = painter.state
+                                    if (paintState is AsyncImagePainter.State.Loading || paintState is AsyncImagePainter.State.Error) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(128.dp)
+                                                .shimmer()
+                                                .background(MaterialTheme.colors.secondary)
+                                                .shimmer()
+                                        )
+                                    } else
+                                        SubcomposeAsyncImageContent()
+                                }
+                            }
+                        }
+                        Spacer(
+                            modifier = Modifier.padding(
+                                2.dp
+                            )
+                        )
+                    }
+                    item {
+                        Text(
+                            text = "Delete items by fully swiping them to the left",
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 10.dp)
+                        )
+                    }
+                } else if (isLoading) {
+                    item {
+                        Spacer(modifier = Modifier.padding(top = 45.dp))
+                    }
+                    items(3) {
                         Box(
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.shimmer()
                         ) {
                             Box(
                                 modifier = Modifier
+                                    .fillMaxSize()
                                     .size(128.dp)
-                                    .fillMaxSize()
                                     .clip(RoundedCornerShape(14.dp))
-//                                    .shimmer()
-//                                    .background(MaterialTheme.colors.secondary)
-                                    .background(MaterialTheme.colors.background)
-                                    .shimmer()
+                                    .background(MaterialTheme.colors.surface)
                             )
-
-                            SubcomposeAsyncImage(
-                                model = animalPhotos[it].second,
-                                contentDescription = "Favorite ${it + 1}",
-                                contentScale = ContentScale.FillBounds,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(14.dp))
-                            ) {
-                                val paintState = painter.state
-                                if (paintState is AsyncImagePainter.State.Loading || paintState is AsyncImagePainter.State.Error) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(128.dp)
-                                            .shimmer()
-                                            .background(MaterialTheme.colors.secondary)
-                                            .shimmer()
-                                    )
-                                } else
-                                    SubcomposeAsyncImageContent()
-                            }
                         }
                     }
-                    Spacer(
-                        modifier = Modifier.padding(
-                            2.dp
-                        )
-                    )
+                } else {
+                    item {
+                        Text(text = "No favorites")
+                    }
                 }
-                item {
-                    Text(
-                        text = "${animalPhotos.size} item${if (animalPhotos.size > 1) "s" else ""}",
-                        modifier = Modifier.padding(top = 10.dp)
-                    )
-                }
-            } else {
-            items(5) {
-                Box(
-                    modifier = Modifier
-                        .size(128.dp)
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(MaterialTheme.colors.background)
-                        .shimmer()
-                )
             }
+            TimeText(
+                modifier = Modifier.scrollAway(scalingLazyListState)
+            )
+            PositionIndicator(
+                scalingLazyListState = scalingLazyListState
+            )
+            Vignette(vignettePosition = VignettePosition.TopAndBottom)
         }
-        }
-        TimeText(
-            modifier = Modifier.scrollAway(scalingLazyListState)
-        )
-        PositionIndicator(
-            scalingLazyListState = scalingLazyListState
-        )
-        Vignette(vignettePosition = VignettePosition.TopAndBottom)
     }
-}
 }

@@ -21,12 +21,6 @@ import androidx.wear.watchface.complications.data.SmallImageType
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
 import com.turtlepaw.cats.R
-import com.turtlepaw.cats.presentation.dataStore
-import com.turtlepaw.cats.utils.Settings
-import com.turtlepaw.cats.utils.SettingsBasics
-import com.turtlepaw.cats.utils.ImageViewModel
-import com.turtlepaw.cats.utils.ImageViewModelFactory
-import java.time.LocalDate
 
 
 class MainComplicationService : SuspendingComplicationDataSourceService(), ViewModelStoreOwner {

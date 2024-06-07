@@ -46,9 +46,6 @@ enum class Routes(private val route: String) {
     }
 }
 
-// At the top level of your kotlin file:
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = SettingsBasics.HISTORY_STORAGE_BASE.getKey())
-
 class MainActivity : ComponentActivity() {
     private lateinit var database: AppDatabase
 

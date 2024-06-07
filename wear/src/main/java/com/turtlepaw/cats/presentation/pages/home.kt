@@ -6,6 +6,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
 import android.util.Log
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -28,6 +32,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -42,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import androidx.core.content.edit
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
@@ -130,9 +136,31 @@ fun SettingsButton(openSettings: () -> Unit) {
             backgroundColor = MaterialTheme.colors.primary
         )
     ) {
-        Text(text = "Settings")
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.padding(end = 10.dp)) {
+                Icon(
+                    painter = painterResource(id = R.drawable.settings),
+                    contentDescription = "Settings",
+                    tint = MaterialTheme.colors.onPrimary,
+                )
+            }
+            Text(
+                text = "Settings",
+                color = MaterialTheme.colors.onPrimary
+            )
+        }
     }
 }
+
+enum class IntroductionProgress {
+    TapToRefresh,
+    LongPressToFavorite,
+    None
+}
+
+val animationSpec = TweenSpec<Float>(durationMillis = 300)
 
 @OptIn(
     ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class,
@@ -155,6 +183,8 @@ fun WearHome(
         var isFavoriting by remember { mutableStateOf<Boolean>(false) }
         var lastConnectedState by remember { mutableStateOf<Boolean>(isConnected) }
         var error by remember { mutableStateOf<String?>(null) }
+        val animatedProgress = remember { Animatable(initialValue = 0f) }
+        var introductionProgress by remember { mutableStateOf(IntroductionProgress.TapToRefresh) }
         val isOfflineAvailable = true
         val coroutineScope = rememberCoroutineScope()
         val lifecycleOwner = LocalLifecycleOwner.current
@@ -167,6 +197,13 @@ fun WearHome(
             Settings.USER_WALKTHROUGH_COMPLETE.getKey(),
             Settings.USER_WALKTHROUGH_COMPLETE.getDefaultAsBoolean()
         )
+
+        LaunchedEffect(userWalkthroughComplete) {
+            animatedProgress.animateTo(
+                if(userWalkthroughComplete) 0f else 1f,
+                animationSpec
+            )
+        }
         // Suspended functions
         LaunchedEffect(state, isConnected) {
             Log.d("CatEffect", "IS connected: $isConnected ${animalPhotos.isEmpty()}")
@@ -284,6 +321,22 @@ fun WearHome(
                                     .combinedClickable(
                                         onClick = {
                                             coroutineScope.launch {
+                                                if (!userWalkthroughComplete) {
+                                                    animatedProgress.animateTo(
+                                                        0f,
+                                                        animationSpec
+                                                    )
+                                                    introductionProgress =
+                                                        IntroductionProgress.LongPressToFavorite
+                                                    delay(1500)
+                                                    animatedProgress.animateTo(
+                                                        1f,
+                                                        animationSpec
+                                                    )
+                                                }
+                                            }
+
+                                            coroutineScope.launch {
                                                 if (!isLoading) {
                                                     isLoading = true
                                                     val animalTypes = sharedPreferences.getString(
@@ -317,6 +370,11 @@ fun WearHome(
                                         onLongClick = {
                                             coroutineScope.launch {
                                                 if (!userWalkthroughComplete) {
+                                                    animatedProgress.animateTo(
+                                                        0f,
+                                                        animationSpec
+                                                    )
+
                                                     sharedPreferences.edit {
                                                         putBoolean(
                                                             Settings.USER_WALKTHROUGH_COMPLETE.getKey(),
@@ -327,6 +385,7 @@ fun WearHome(
 
                                                     userWalkthroughComplete = true
                                                 }
+
                                                 if (!isLoading) {
                                                     val current =
                                                         animalPhotos[currentImageIndex]
@@ -355,9 +414,17 @@ fun WearHome(
                                                             )
 
                                                         isFavoriting = true
+                                                        animatedProgress.animateTo(
+                                                            1f,
+                                                            animationSpec
+                                                        )
 
-                                                        delay(2000)
+                                                        delay(1200)
 
+                                                        animatedProgress.animateTo(
+                                                            0f,
+                                                            animationSpec
+                                                        )
                                                         isFavoriting = false
                                                     }
                                                 }
@@ -375,39 +442,46 @@ fun WearHome(
                                             .shimmer()
                                     )
                                 } else {
+                                    val maxBlur = 20f
+                                    val progress = animatedProgress.value
+                                    val blurValue = lerp(0f, maxBlur, progress).dp
                                     SubcomposeAsyncImageContent(
                                         modifier = if (!userWalkthroughComplete || isFavoriting) Modifier.blur(
-                                            20.dp
+                                            blurValue
                                         ) else Modifier
                                     )
-                                    if (!userWalkthroughComplete) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .background(Color.Transparent)
-                                                .padding(16.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = "Tap the image to refresh",
-                                                color = Color.White,
-                                                textAlign = TextAlign.Center,
-                                                style = MaterialTheme.typography.body1
-                                            )
-                                        }
-                                    } else if(isFavoriting){
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .background(Color.Transparent)
-                                                .padding(16.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.favorite),
-                                                contentDescription = "Favorite",
-                                                modifier = Modifier.size(50.dp)
-                                            )
+                                    Box(modifier = Modifier.alpha(animatedProgress.value)){
+                                        if (!userWalkthroughComplete && introductionProgress != IntroductionProgress.None) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color.Transparent)
+                                                    .padding(16.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = if(introductionProgress == IntroductionProgress.TapToRefresh)
+                                                        "Tap the image to refresh"
+                                                    else "Long press to favorite",
+                                                    color = Color.White,
+                                                    textAlign = TextAlign.Center,
+                                                    style = MaterialTheme.typography.body1
+                                                )
+                                            }
+                                        } else if(isFavoriting){
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color.Transparent)
+                                                    .padding(16.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.favorite),
+                                                    contentDescription = "Favorite",
+                                                    modifier = Modifier.size(50.dp)
+                                                )
+                                            }
                                         }
                                     }
                                 }

@@ -48,8 +48,6 @@ enum class MyPetRoutes(private val route: String) {
 }
 
 class MyPetActivity : ComponentActivity() {
-    private lateinit var imageViewModelFactory: ImageViewModelFactory
-    private lateinit var imageViewModel: ImageViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
@@ -57,19 +55,9 @@ class MyPetActivity : ComponentActivity() {
 
         setTheme(android.R.style.Theme_DeviceDefault)
 
-        // Initialize your BedtimeViewModelFactory here
-        imageViewModelFactory = ImageViewModelFactory(dataStore)
-
-        // Use the factory to create the BedtimeViewModel
-        imageViewModel = ViewModelProvider(
-            this,
-            imageViewModelFactory
-        )[ImageViewModel::class.java]
-
         setContent {
             MyPetNavGraph(
-                this,
-                imageViewModel
+                this
             )
         }
     }
@@ -78,8 +66,7 @@ class MyPetActivity : ComponentActivity() {
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MyPetNavGraph(
-    context: Context,
-    viewModel: ImageViewModel
+    context: Context
 ) {
     SleepTheme {
         // Creates a navigation controller for our pages
@@ -111,8 +98,7 @@ fun MyPetNavGraph(
             composable(Routes.HOME.getRoute()) {
                 MyPetHome(
                     context,
-                    isConnected,
-                    viewModel
+                    isConnected
                 ) {
                     navController.navigate(MyPetRoutes.SETTINGS.getRoute())
                 }
