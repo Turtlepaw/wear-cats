@@ -14,8 +14,8 @@ android {
         applicationId = "com.turtlepaw.cats"
         minSdk = 30
         targetSdk = 33
-        versionCode = 4
-        versionName = "1.1"
+        versionCode = 5
+        versionName = "1.2"
         vectorDrawables {
             useSupportLibrary = true
         }

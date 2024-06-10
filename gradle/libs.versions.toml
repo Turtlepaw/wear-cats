@@ -7,17 +7,18 @@ composeShimmer = "1.2.0"
 datastorePreferences = "1.1.1"
 desugar_jdk_libs = "2.0.4"
 healthServicesClient = "1.1.0-alpha03"
-horologistComposeLayout = "0.6.0"
+horologistComposeLayout = "0.6.10"
+horologistComposables = "0.6.0"
 kotlin = "1.9.23"
 coreKtx = "1.13.1"
 junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
-appcompat = "1.6.1"
+appcompat = "1.7.0"
 kotlinxSerializationJson = "1.6.3"
-lifecycleViewmodelCompose = "2.7.0"
-playServicesPal = "20.2.0"
-playServicesWearable = "18.1.0"
+lifecycleViewmodelCompose = "2.8.1"
+playServicesPal = "20.3.0"
+playServicesWearable = "18.2.0"
 material = "1.12.0"
 constraintlayout = "2.1.4"
 composeBom = "2024.05.00"
@@ -61,7 +62,7 @@ androidx-datastore-preferences = { module = "androidx.datastore:datastore-prefer
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 androidx-wear = { module = "androidx.wear:wear", version.ref = "wear" }
 desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
-horologist-composables = { module = "com.google.android.horologist:horologist-composables", version.ref = "horologistComposeLayout" }
+horologist-composables = { module = "com.google.android.horologist:horologist-composables", version.ref = "horologistComposables" }
 horologist-compose-layout = { module = "com.google.android.horologist:horologist-compose-layout", version.ref = "horologistComposeLayout" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

@@ -56,6 +56,7 @@ import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.cats.R
 import com.turtlepaw.cats.database.AppDatabase
 import com.turtlepaw.cats.presentation.components.ItemsListWithModifier
+import com.turtlepaw.cats.presentation.components.Page
 import com.turtlepaw.cats.presentation.theme.SleepTheme
 import com.turtlepaw.cats.utils.DOWNLOAD_LIMIT
 import com.turtlepaw.cats.utils.decodeByteArray
@@ -99,8 +100,6 @@ fun Favorites(
     database: AppDatabase,
 ) {
     SleepTheme {
-        val focusRequester = rememberActiveFocusRequester()
-        val scalingLazyListState = rememberScalingLazyListState()
         val coroutineScope = rememberCoroutineScope()
         var animalPhotos by remember { mutableStateOf<List<Pair<Int, ByteArray>>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
@@ -117,20 +116,13 @@ fun Favorites(
                 .background(MaterialTheme.colors.background),
             contentAlignment = Alignment.Center,
         ) {
-            ItemsListWithModifier(
-                modifier = Modifier.rotaryWithScroll(
-                    reverseDirection = false,
-                    focusRequester = focusRequester,
-                    scrollableState = scalingLazyListState,
-                ),
-                scrollableState = scalingLazyListState,
-            ) {
+            Page {
                 if (animalPhotos.isNotEmpty()) {
                     item {
                         Text(
                             text = "${animalPhotos.size} favorite${if (animalPhotos.size > 1) "s" else ""}",
                             modifier = Modifier.padding(
-                                top = 30.dp, bottom = 10.dp
+                                bottom = 5.dp
                             )
                         )
                     }
@@ -138,7 +130,9 @@ fun Favorites(
                         val revealState = rememberRevealState()
                         SwipeToRevealCard(
                             revealState = revealState,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(vertical = 1.dp),
                             primaryAction = {
                                 SwipeToRevealPrimaryAction(
                                     revealState = revealState,
@@ -172,17 +166,6 @@ fun Favorites(
                             Box(
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(128.dp)
-                                        .fillMaxSize()
-                                        .clip(RoundedCornerShape(14.dp))
-//                                    .shimmer()
-//                                    .background(MaterialTheme.colors.secondary)
-                                        .background(MaterialTheme.colors.background)
-                                        .shimmer()
-                                )
-
                                 SubcomposeAsyncImage(
                                     model = animalPhotos[it].second,
                                     contentDescription = "Favorite ${it + 1}",
@@ -205,17 +188,14 @@ fun Favorites(
                                 }
                             }
                         }
-                        Spacer(
-                            modifier = Modifier.padding(
-                                2.dp
-                            )
-                        )
                     }
                     item {
                         Text(
                             text = "Delete items by fully swiping them to the left",
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 10.dp)
+                            modifier = Modifier.padding(
+                                top = 5.dp, bottom = 20.dp
+                            )
                         )
                     }
                 } else if (isLoading) {
@@ -239,15 +219,14 @@ fun Favorites(
                     item {
                         Text(text = "No favorites")
                     }
+                    item {
+                        Text(
+                            text = "Add favorite by long pressing images",
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
-            TimeText(
-                modifier = Modifier.scrollAway(scalingLazyListState)
-            )
-            PositionIndicator(
-                scalingLazyListState = scalingLazyListState
-            )
-            Vignette(vignettePosition = VignettePosition.TopAndBottom)
         }
     }
 }

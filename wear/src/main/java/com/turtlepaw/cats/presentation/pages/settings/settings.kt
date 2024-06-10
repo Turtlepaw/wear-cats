@@ -120,7 +120,7 @@ fun WearSettings(
         var isLoading by remember { mutableStateOf(false) }
         var animalsEnabled by remember { mutableStateOf<List<Animals>>(emptyList()) }
         var downloadProgress by remember { mutableStateOf<Int>(0) }
-        val isDownloadsEnabled = true
+        val isDownloadsEnabled = false
         val sharedPreferences = context.getSharedPreferences(
             SettingsBasics.SHARED_PREFERENCES.getKey(),
             SettingsBasics.SHARED_PREFERENCES.getMode()

@@ -5,6 +5,8 @@ import AnimalPhotoSerializer
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.TweenSpec
@@ -418,6 +420,16 @@ fun WearHome(
                                                             1f,
                                                             animationSpec
                                                         )
+
+                                                        val vibrator = context.getSystemService(
+                                                            Vibrator::class.java)
+                                                        if (vibrator != null && vibrator.hasVibrator()) {
+                                                            vibrator.vibrate(
+                                                                VibrationEffect.startComposition().addPrimitive(
+                                                                    VibrationEffect.Composition.PRIMITIVE_CLICK, 1f
+                                                                ).compose()
+                                                            )
+                                                        }
 
                                                         delay(1200)
 
