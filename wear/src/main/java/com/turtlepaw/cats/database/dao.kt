@@ -29,7 +29,7 @@ interface FavoritesDao {
     @Insert
     suspend fun insertFavorite(favorite: Favorite)
 
-    @Query("SELECT * FROM favorite ORDER BY timestamp ASC")
+    @Query("SELECT * FROM favorite ORDER BY timestamp DESC")
     suspend fun getFavorites(): List<Favorite>
 
     @Query("DELETE FROM favorite WHERE id = :favoriteId")
