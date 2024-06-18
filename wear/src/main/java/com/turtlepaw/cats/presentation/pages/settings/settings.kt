@@ -97,6 +97,8 @@ fun isWorkScheduled(context: Context, uniqueWorkName: String): Boolean {
     return false
 }
 
+const val isOfflineAvailable = true
+
 @SuppressLint("InlinedApi")
 @OptIn(
     ExperimentalWearFoundationApi::class, ExperimentalHorologistApi::class,
@@ -120,7 +122,6 @@ fun WearSettings(
         var isLoading by remember { mutableStateOf(false) }
         var animalsEnabled by remember { mutableStateOf<List<Animals>>(emptyList()) }
         var downloadProgress by remember { mutableStateOf<Int>(0) }
-        val isDownloadsEnabled = false
         val sharedPreferences = context.getSharedPreferences(
             SettingsBasics.SHARED_PREFERENCES.getKey(),
             SettingsBasics.SHARED_PREFERENCES.getMode()
@@ -223,7 +224,7 @@ fun WearSettings(
                     alignment = Alignment.Top,
                 )
             ) {
-                if(isDownloadsEnabled){
+                if(isOfflineAvailable){
                     item {
                         Text(
                             text = "Downloads",

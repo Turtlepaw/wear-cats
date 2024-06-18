@@ -9,19 +9,25 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +43,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -74,11 +82,14 @@ import com.google.android.horologist.compose.rotaryinput.rotaryWithScroll
 import com.turtlepaw.cats.R
 import com.turtlepaw.cats.database.AppDatabase
 import com.turtlepaw.cats.database.Favorite
+import com.turtlepaw.cats.database.Image
 import com.turtlepaw.cats.database.downloadImage
 import com.turtlepaw.cats.presentation.Routes
 import com.turtlepaw.cats.presentation.components.ItemsListWithModifier
+import com.turtlepaw.cats.presentation.pages.settings.isOfflineAvailable
 import com.turtlepaw.cats.presentation.theme.SleepTheme
 import com.turtlepaw.cats.utils.Animals
+import com.turtlepaw.cats.utils.DOWNLOAD_LIMIT
 import com.turtlepaw.cats.utils.Settings
 import com.turtlepaw.cats.utils.SettingsBasics
 import com.turtlepaw.cats.utils.decodeByteArray
@@ -87,6 +98,7 @@ import com.turtlepaw.cats.utils.enumFromJSON
 import com.valentinilk.shimmer.shimmer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.ListSerializer
@@ -164,6 +176,24 @@ enum class IntroductionProgress {
 
 val animationSpec = TweenSpec<Float>(durationMillis = 300)
 
+fun loadOfflineImages(
+    offlineImages: List<Image>,
+    onProgressUpdate: (progress: Float) -> Unit
+): List<ByteArray> {
+    var completedImages = 0
+    val updatedPhotos = mutableListOf<ByteArray>()
+
+    for (image in offlineImages) {
+        completedImages += 1
+        val offlineLoadProgress = completedImages.toFloat() / DOWNLOAD_LIMIT.toFloat()
+        onProgressUpdate(offlineLoadProgress)
+        Log.d("OfflineLoad", "$completedImages complete, $offlineLoadProgress prg")
+        updatedPhotos.add(decodeByteArray(image.value))
+    }
+
+    return updatedPhotos.shuffled()
+}
+
 @OptIn(
     ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class,
     ExperimentalFoundationApi::class
@@ -185,9 +215,13 @@ fun WearHome(
         var isFavoriting by remember { mutableStateOf<Boolean>(false) }
         var lastConnectedState by remember { mutableStateOf<Boolean>(isConnected) }
         var error by remember { mutableStateOf<String?>(null) }
+        var progress by remember { mutableStateOf(0f) }
+        val offlineLoadProgress by animateFloatAsState(
+            targetValue = progress,
+            animationSpec = tween(durationMillis = 600)
+        )
         val animatedProgress = remember { Animatable(initialValue = 0f) }
         var introductionProgress by remember { mutableStateOf(IntroductionProgress.TapToRefresh) }
-        val isOfflineAvailable = true
         val coroutineScope = rememberCoroutineScope()
         val lifecycleOwner = LocalLifecycleOwner.current
         val state by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
@@ -202,7 +236,7 @@ fun WearHome(
 
         LaunchedEffect(userWalkthroughComplete) {
             animatedProgress.animateTo(
-                if(userWalkthroughComplete) 0f else 1f,
+                if (userWalkthroughComplete) 0f else 1f,
                 animationSpec
             )
         }
@@ -225,13 +259,27 @@ fun WearHome(
                         isLoading = false
                     }
                 } else {
+                    coroutineScope.launch {
+                        delay(300)
+                        val totalDurationMillis = 7000
+                        val snapPoints = listOf(0.2f, 0.4f, 0.8f)
+                        val stepTime = totalDurationMillis / snapPoints.size
+
+                        for (point in snapPoints) {
+                            progress = point
+                            delay(stepTime.toLong())
+                        }
+                    }
+
                     val offlineImages = database.imageDao().getImages()
-                    animalPhotos = offlineImages.map {
-                        decodeByteArray(it.value)
-                    }.shuffled()
                     if (offlineImages.isEmpty()) error =
                         if (isOfflineAvailable) "You haven't downloaded any offline images"
                         else "You're offline"
+                    animalPhotos = loadOfflineImages(offlineImages) {
+                        progress = it
+                    }
+                    progress = 1f
+                    delay(300)
                     isLoading = false
                 }
             }
@@ -255,10 +303,11 @@ fun WearHome(
             ) {
                 if (error != null) {
                     item {
-                        Spacer(
-                            modifier = Modifier.padding(
-                                top = 42.dp, bottom = 5.dp
-                            )
+                        Icon(
+                            painter = painterResource(id = R.drawable.error),
+                            contentDescription = "Error",
+                            tint = MaterialTheme.colors.primary,
+                            modifier = Modifier.padding(bottom = 2.dp)
                         )
                     }
                     item {
@@ -278,7 +327,12 @@ fun WearHome(
                             open(Routes.SETTINGS)
                         }
                     }
-                } else if (animalPhotos.isNotEmpty()) {
+                    item {
+                        FavoritesButton {
+                            open(Routes.FAVORITES)
+                        }
+                    }
+                } else if (animalPhotos.isNotEmpty() || isLoading) {
                     item {
                         Spacer(
                             modifier = Modifier.padding(
@@ -293,18 +347,77 @@ fun WearHome(
                         Box(
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(128.dp)
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(14.dp))
+                            if (isLoading) {
+                                val rotation = remember { Animatable(0f) }
+
+                                LaunchedEffect(isLoading) {
+                                    if (isLoading) {
+                                        while (isLoading) {
+                                            rotation.animateTo(
+                                                targetValue = 360f,
+                                                animationSpec = tween(
+                                                    durationMillis = 10000,
+                                                    easing = LinearEasing
+                                                )
+                                            )
+                                            rotation.snapTo(0f)
+                                        }
+                                    } else {
+                                        rotation.stop()
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .height(130.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.loading_bg),
+                                        contentDescription = "Loading Background",
+                                        modifier = Modifier
+                                            .rotate(rotation.value)
+                                            .scale(1.7f)  // Adjust the scale factor to make the image larger
+                                            .fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+
+                                    Column(
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        Box(modifier = Modifier.size(30.dp)){
+                                            if(isConnected) CircularProgressIndicator()
+                                            else CircularProgressIndicator(
+                                                progress = offlineLoadProgress,
+                                                indicatorColor = Color.White
+                                            )
+                                        }
+
+                                        Text(
+                                            text = if(isConnected) "Preparing"
+                                                else "Loading Offline\nImages",
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.padding(top = 8.dp)
+                                        )
+                                    }
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(128.dp)
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(14.dp))
 //                                    .shimmer()
 //                                    .background(MaterialTheme.colors.secondary)
-                                    .background(MaterialTheme.colors.background)
-                                    .shimmer()
-                            )
+                                        .background(MaterialTheme.colors.background)
+                                        .shimmer()
+                                )
 
-                            SubcomposeAsyncImage(model = animalPhotos[currentImageIndex],
+                                SubcomposeAsyncImage(
+                                    model = if (!isLoading) animalPhotos[currentImageIndex]
+                                    else R.drawable.loading_bg,
 //                                loading = {
 //                                    //CircularProgressIndicator()
 //                                    Box(
@@ -315,154 +428,173 @@ fun WearHome(
 //                                            .shimmer()
 //                                    )
 //                                },
-                                contentDescription = "Cat Photo",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .combinedClickable(
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                if (!userWalkthroughComplete) {
-                                                    animatedProgress.animateTo(
-                                                        0f,
-                                                        animationSpec
-                                                    )
-                                                    introductionProgress =
-                                                        IntroductionProgress.LongPressToFavorite
-                                                    delay(1500)
-                                                    animatedProgress.animateTo(
-                                                        1f,
-                                                        animationSpec
-                                                    )
-                                                }
-                                            }
-
-                                            coroutineScope.launch {
-                                                if (!isLoading) {
-                                                    isLoading = true
-                                                    val animalTypes = sharedPreferences.getString(
-                                                        Settings.ANIMALS.getKey(),
-                                                        Settings.ANIMALS.getDefault()
-                                                    )
-                                                    val types = enumFromJSON(animalTypes)
-                                                    if (currentImageIndex == animalPhotos.size.minus(
-                                                            1
-                                                        )
-                                                    ) {
-                                                        if (isConnected) {
-                                                            safelyFetch(types) { data ->
-                                                                currentImageIndex = 0
-                                                                animalPhotos = data.map {
-                                                                    it.url
-                                                                }
-                                                                isLoading = false
-                                                            }
-                                                        } else {
-                                                            animalPhotos = animalPhotos.shuffled()
-                                                            currentImageIndex = 0
-                                                        }
-                                                    } else {
-                                                        currentImageIndex += 1
-                                                    }
-                                                    isLoading = false
-                                                }
-                                            }
-                                        },
-                                        onLongClick = {
-                                            coroutineScope.launch {
-                                                if (!userWalkthroughComplete) {
-                                                    animatedProgress.animateTo(
-                                                        0f,
-                                                        animationSpec
-                                                    )
-
-                                                    sharedPreferences.edit {
-                                                        putBoolean(
-                                                            Settings.USER_WALKTHROUGH_COMPLETE.getKey(),
-                                                            true
-                                                        )
-                                                        apply()
-                                                    }
-
-                                                    userWalkthroughComplete = true
-                                                }
-
-                                                if (!isLoading) {
-                                                    val current =
-                                                        animalPhotos[currentImageIndex]
-                                                    val data = when (current) {
-                                                        is ByteArray -> encodeToBase64(
-                                                            animalPhotos[currentImageIndex] as Bitmap,
-                                                            CompressFormat.WEBP_LOSSLESS,
-                                                            80
-                                                        )
-
-                                                        is String -> {
-                                                            downloadImage(current, context)
-                                                        }
-
-                                                        else -> null
-                                                    }
-
-                                                    if (data != null) {
-                                                        database
-                                                            .favoritesDao()
-                                                            .insertFavorite(
-                                                                Favorite(
-                                                                    timestamp = LocalDateTime.now(),
-                                                                    value = data
-                                                                )
-                                                            )
-
-                                                        isFavoriting = true
-                                                        animatedProgress.animateTo(
-                                                            1f,
-                                                            animationSpec
-                                                        )
-
-                                                        val vibrator = context.getSystemService(
-                                                            Vibrator::class.java)
-                                                        if (vibrator != null && vibrator.hasVibrator()) {
-                                                            vibrator.vibrate(
-                                                                VibrationEffect.startComposition().addPrimitive(
-                                                                    VibrationEffect.Composition.PRIMITIVE_CLICK, 1f
-                                                                ).compose()
-                                                            )
-                                                        }
-
-                                                        delay(1200)
-
+                                    contentDescription = "Cat Photo",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .then(
+                                            if (isLoading) {
+                                                Modifier.height(130.dp)
+                                            } else
+                                                Modifier
+                                        )
+                                        .combinedClickable(
+                                            onClick = {
+                                                coroutineScope.launch {
+                                                    if (!userWalkthroughComplete) {
                                                         animatedProgress.animateTo(
                                                             0f,
                                                             animationSpec
                                                         )
-                                                        isFavoriting = false
+                                                        introductionProgress =
+                                                            IntroductionProgress.LongPressToFavorite
+                                                        delay(1500)
+                                                        animatedProgress.animateTo(
+                                                            1f,
+                                                            animationSpec
+                                                        )
+                                                    }
+                                                }
+
+                                                coroutineScope.launch {
+                                                    if (!isLoading) {
+                                                        isLoading = true
+                                                        val animalTypes =
+                                                            sharedPreferences.getString(
+                                                                Settings.ANIMALS.getKey(),
+                                                                Settings.ANIMALS.getDefault()
+                                                            )
+                                                        val types = enumFromJSON(animalTypes)
+                                                        if (currentImageIndex == animalPhotos.size.minus(
+                                                                1
+                                                            )
+                                                        ) {
+                                                            if (isConnected) {
+                                                                safelyFetch(types) { data ->
+                                                                    currentImageIndex = 0
+                                                                    animalPhotos = data.map {
+                                                                        it.url
+                                                                    }
+                                                                    isLoading = false
+                                                                }
+                                                            } else {
+                                                                animalPhotos =
+                                                                    animalPhotos.shuffled()
+                                                                currentImageIndex = 0
+                                                            }
+                                                        } else {
+                                                            currentImageIndex += 1
+                                                        }
+                                                        isLoading = false
+                                                    }
+                                                }
+                                            },
+                                            onLongClick = {
+                                                coroutineScope.launch {
+                                                    if (!userWalkthroughComplete) {
+                                                        animatedProgress.animateTo(
+                                                            0f,
+                                                            animationSpec
+                                                        )
+
+                                                        sharedPreferences.edit {
+                                                            putBoolean(
+                                                                Settings.USER_WALKTHROUGH_COMPLETE.getKey(),
+                                                                true
+                                                            )
+                                                            apply()
+                                                        }
+
+                                                        userWalkthroughComplete = true
+                                                    }
+
+                                                    if (!isLoading) {
+                                                        val current =
+                                                            animalPhotos[currentImageIndex]
+                                                        val data = when (current) {
+                                                            is ByteArray -> encodeToBase64(
+                                                                animalPhotos[currentImageIndex] as Bitmap,
+                                                                CompressFormat.WEBP_LOSSLESS,
+                                                                80
+                                                            )
+
+                                                            is String -> {
+                                                                downloadImage(current, context)
+                                                            }
+
+                                                            else -> null
+                                                        }
+
+                                                        if (data != null) {
+                                                            database
+                                                                .favoritesDao()
+                                                                .insertFavorite(
+                                                                    Favorite(
+                                                                        timestamp = LocalDateTime.now(),
+                                                                        value = data
+                                                                    )
+                                                                )
+
+                                                            isFavoriting = true
+                                                            animatedProgress.animateTo(
+                                                                1f,
+                                                                animationSpec
+                                                            )
+
+                                                            val vibrator = context.getSystemService(
+                                                                Vibrator::class.java
+                                                            )
+                                                            if (vibrator != null && vibrator.hasVibrator()) {
+                                                                vibrator.vibrate(
+                                                                    VibrationEffect
+                                                                        .startComposition()
+                                                                        .addPrimitive(
+                                                                            VibrationEffect.Composition.PRIMITIVE_CLICK,
+                                                                            1f
+                                                                        )
+                                                                        .compose()
+                                                                )
+                                                            }
+
+                                                            delay(1200)
+
+                                                            animatedProgress.animateTo(
+                                                                0f,
+                                                                animationSpec
+                                                            )
+                                                            isFavoriting = false
+                                                        }
                                                     }
                                                 }
                                             }
-                                        }
-                                    )
-                            ) {
-                                val paintState = painter.state
-                                if (paintState is AsyncImagePainter.State.Loading || paintState is AsyncImagePainter.State.Error) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(128.dp)
-                                            .shimmer()
-                                            .background(MaterialTheme.colors.secondary)
-                                            .shimmer()
-                                    )
-                                } else {
-                                    val maxBlur = 20f
-                                    val progress = animatedProgress.value
-                                    val blurValue = lerp(0f, maxBlur, progress).dp
-                                    SubcomposeAsyncImageContent(
-                                        modifier = if (!userWalkthroughComplete || isFavoriting) Modifier.blur(
-                                            blurValue
-                                        ) else Modifier
-                                    )
-                                    Box(modifier = Modifier.alpha(animatedProgress.value)){
+                                        )
+                                ) {
+                                    val paintState = painter.state
+                                    if (paintState is AsyncImagePainter.State.Loading || paintState is AsyncImagePainter.State.Error) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(128.dp)
+                                                .shimmer()
+                                                .background(MaterialTheme.colors.secondary)
+                                                .shimmer()
+                                        )
+                                    } else {
+                                        val maxBlur = 20f
+                                        val progress = animatedProgress.value
+                                        val blurValue = lerp(0f, maxBlur, progress).dp
+
+                                        SubcomposeAsyncImageContent(
+                                            modifier =
+                                            if (!userWalkthroughComplete || isFavoriting) Modifier
+                                                .blur(
+                                                    blurValue
+                                                )
+                                            else Modifier
+                                        )
+                                    }
+
+                                    Box(modifier = Modifier.alpha(animatedProgress.value)) {
                                         if (!userWalkthroughComplete && introductionProgress != IntroductionProgress.None) {
                                             Box(
                                                 modifier = Modifier
@@ -472,7 +604,7 @@ fun WearHome(
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Text(
-                                                    text = if(introductionProgress == IntroductionProgress.TapToRefresh)
+                                                    text = if (introductionProgress == IntroductionProgress.TapToRefresh)
                                                         "Tap the image to refresh"
                                                     else "Long press to favorite",
                                                     color = Color.White,
@@ -480,7 +612,7 @@ fun WearHome(
                                                     style = MaterialTheme.typography.body1
                                                 )
                                             }
-                                        } else if(isFavoriting){
+                                        } else if (isFavoriting) {
                                             Box(
                                                 modifier = Modifier
                                                     .fillMaxSize()
@@ -493,6 +625,18 @@ fun WearHome(
                                                     contentDescription = "Favorite",
                                                     modifier = Modifier.size(50.dp)
                                                 )
+                                            }
+                                        } else if (isLoading) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color.Transparent)
+                                                    .padding(16.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Column {
+                                                    CircularProgressIndicator()
+                                                }
                                             }
                                         }
                                     }
