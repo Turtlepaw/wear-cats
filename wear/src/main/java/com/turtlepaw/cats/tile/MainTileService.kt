@@ -6,8 +6,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.wear.protolayout.ActionBuilders
+import androidx.wear.protolayout.ColorBuilders
+import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.DimensionBuilders.expand
 import androidx.wear.protolayout.LayoutElementBuilders
+import androidx.wear.protolayout.LayoutElementBuilders.CONTENT_SCALE_MODE_FIT
 import androidx.wear.protolayout.LayoutElementBuilders.Image
 import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.ResourceBuilders
@@ -32,9 +35,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import java.time.LocalTime
 
-
 private const val RESOURCES_VERSION = "1"
-private const val LAUNCH_APP_ID = "LAUNCH_APP"
+const val LAUNCH_APP_ID = "LAUNCH_APP"
+const val RESOURCE_VIGNETTE = "vignette"
 
 fun getImageId(index: Int): String {
     return "image_$index"
@@ -67,7 +70,16 @@ class MainTileService : SuspendingTileService() {
                 ResourceBuilders.ImageResource.Builder()
                     .setAndroidResourceByResId(
                         ResourceBuilders.AndroidImageResourceByResId.Builder()
-                            .setResourceId(R.drawable.refresh)
+                            .setResourceId(R.drawable.cat_white)
+                            .build()
+                    ).build()
+            )
+            .addIdToImageMapping(
+                RESOURCE_VIGNETTE,
+                ResourceBuilders.ImageResource.Builder()
+                    .setAndroidResourceByResId(
+                        ResourceBuilders.AndroidImageResourceByResId.Builder()
+                            .setResourceId(R.drawable.vignette)
                             .build()
                     ).build()
             )
@@ -98,9 +110,11 @@ class MainTileService : SuspendingTileService() {
         val currentIndex = 0
         val lastClickableId = requestParams.currentState.lastClickableId
         if (lastClickableId == LAUNCH_APP_ID) {
+            hapticClick(applicationContext)
             startActivity(packageManager.getLaunchIntentForPackage(packageName))
         } else if (lastClickableId.startsWith(MODIFIER_CLICK_REFRESH)) {
             hapticClick(applicationContext)
+            startActivity(packageManager.getLaunchIntentForPackage(packageName))
             // We can't have more than 1 image
             // since of android.os.TransactionTooLargeException
 //            val index = parseIndexFromId(lastClickableId)
@@ -137,18 +151,19 @@ private fun layout(currentIndex: Int): LayoutElementBuilders.Box {
         .setWidth(expand())
         .setHeight(expand())
         .setModifiers(
-            ModifiersBuilders.Modifiers.Builder()
-                .setClickable(
-                    ModifiersBuilders.Clickable.Builder()
-                        .setOnClick(
-                            ActionBuilders.LoadAction.Builder().build()
-                        )
-                        .setId(
-                            LAUNCH_APP_ID
-                        )
-                        .build()
-                )
-                .build()
+//            ModifiersBuilders.Modifiers.Builder()
+//                .setClickable(
+//                    ModifiersBuilders.Clickable.Builder()
+//                        .setOnClick(
+//                            ActionBuilders.LoadAction.Builder().build()
+//                        )
+//                        .setId(
+//                            LAUNCH_APP_ID
+//                        )
+//                        .build()
+//                )
+//                .build()
+            getRefreshModifiers()
         )
         .addContent(
             Image.Builder()
@@ -161,8 +176,22 @@ private fun layout(currentIndex: Int): LayoutElementBuilders.Box {
                 .setHeight(
                     expand()
                 )
+                .setContentScaleMode(LayoutElementBuilders.CONTENT_SCALE_MODE_CROP)
                 .build()
         )
+        .addContent(
+            Image.Builder()
+                .setResourceId(RESOURCE_VIGNETTE)
+                .setWidth(
+                    expand()
+                )
+                .setHeight(
+                    expand()
+                )
+                .setContentScaleMode(LayoutElementBuilders.CONTENT_SCALE_MODE_CROP)
+                .build()
+        )
+        .addContent(getRefreshButton())
         .build()
 }
 
@@ -174,10 +203,6 @@ private fun layout(currentIndex: Int): LayoutElementBuilders.Box {
 )
 @Composable
 fun TilePreview() {
-    val timeManager = TimeManager()
-    val timeDifference = timeManager.calculateTimeDifference(LocalTime.of(5, 0));
-    val sleepQuality = timeManager.calculateSleepQuality(timeDifference)
-
     LayoutRootPreview(
         root = layout(
             1

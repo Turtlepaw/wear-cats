@@ -13,8 +13,8 @@ import androidx.wear.protolayout.ModifiersBuilders
 
 const val RESOURCE_REFRESH = "refresh_icon"
 const val MODIFIER_CLICK_REFRESH = "refresh_tile"
-fun getRefreshId(index: Int): String {
-    return MODIFIER_CLICK_REFRESH + "_${index.plus(1)}"
+fun getRefreshId(): String {
+    return LAUNCH_APP_ID
 }
 
 fun parseIndexFromId(id: String): Int? {
@@ -47,7 +47,7 @@ fun hapticClick(context: Context) {
  * - handles the refresh action ([MODIFIER_CLICK_REFRESH]) in `onTileRequest`;
  * - adds a resource for [RESOURCE_REFRESH] in `onTileResourcesRequest`.
  */
-fun getRefreshButton(currentIndex: Int): LayoutElementBuilders.Arc =
+fun getRefreshButton(): LayoutElementBuilders.Arc =
     LayoutElementBuilders.Arc.Builder()
         .setAnchorAngle(
             DimensionBuilders.DegreesProp.Builder(180f).build()
@@ -59,7 +59,7 @@ fun getRefreshButton(currentIndex: Int): LayoutElementBuilders.Arc =
                         .setResourceId(RESOURCE_REFRESH)
                         .setWidth(DimensionBuilders.dp(24f))
                         .setHeight(DimensionBuilders.dp(24f))
-                        .setModifiers(getRefreshModifiers(currentIndex))
+                        .setModifiers(getRefreshModifiers())
                         .build()
                 )
                 .setRotateContents(false)
@@ -68,7 +68,7 @@ fun getRefreshButton(currentIndex: Int): LayoutElementBuilders.Arc =
         .build()
 
 /** @return a modifier for tiles that represents a 'tap to refresh' [ActionBuilders.LoadAction] */
-fun getRefreshModifiers(currentIndex: Int): ModifiersBuilders.Modifiers {
+fun getRefreshModifiers(): ModifiersBuilders.Modifiers {
     return ModifiersBuilders.Modifiers.Builder()
         .setClickable(
             ModifiersBuilders.Clickable.Builder()
@@ -76,7 +76,7 @@ fun getRefreshModifiers(currentIndex: Int): ModifiersBuilders.Modifiers {
                     ActionBuilders.LoadAction.Builder().build()
                 )
                 .setId(
-                    getRefreshId(currentIndex)
+                    getRefreshId()
                 )
                 .build()
         )

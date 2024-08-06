@@ -14,7 +14,7 @@ android {
         applicationId = "com.turtlepaw.cats"
         minSdk = 30
         targetSdk = 33
-        versionCode = 5
+        versionCode = 10
         versionName = "1.2"
         vectorDrawables {
             useSupportLibrary = true
@@ -106,5 +106,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
+
+    // Lottie
+    implementation(libs.lottie.compose)
+
     //wearApp(project(":wear"))
 }

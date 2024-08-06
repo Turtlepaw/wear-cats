@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="wear">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-06-17T02:36:34.360813400Z">
+        <DropdownSelection timestamp="2024-08-06T04:43:53.843838400Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\olivi\.android\avd\Wear_OS_4.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\olivi\.android\avd\Wear_OS.avd" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -23,6 +23,9 @@
           </Target>
         </DropdownSelection>
         <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="my_cat">
+        <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
   </component>

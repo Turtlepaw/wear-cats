@@ -7,33 +7,39 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.os.Build
 import android.util.Log
 import androidx.annotation.Keep
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.turtlepaw.cats.R
 import com.turtlepaw.cats.database.AppDatabase
 import com.turtlepaw.cats.database.downloadImages
+import com.turtlepaw.cats.utils.DOWNLOAD_LIMIT
 import com.turtlepaw.cats.utils.SettingsBasics
 import java.time.LocalDate
 
 
 @Keep
-class CatDownloadWorker(val appContext: Context, params: WorkerParameters) :
-    CoroutineWorker(appContext, params) {
+class CatDownloadWorker(val context: Context, params: WorkerParameters) :
+    CoroutineWorker(context, params) {
 
     private val notificationManager =
-        appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as
+                NotificationManager
 
     init {
         createNotificationChannel()
     }
 
     override suspend fun doWork(): Result {
-        showNotification(0, 100)
+        //showNotification(0, 100)
+        setForeground(createForegroundInfo(0))
         val sharedPreferences = applicationContext.getSharedPreferences(
             SettingsBasics.SHARED_PREFERENCES.getKey(),
             SettingsBasics.SHARED_PREFERENCES.getMode()
@@ -58,12 +64,12 @@ class CatDownloadWorker(val appContext: Context, params: WorkerParameters) :
             callback
         )
 
-        val database = AppDatabase.getDatabase(appContext).imageDao()
+        val database = AppDatabase.getDatabase(context).imageDao()
         database.downloadImages(applicationContext) { current, max ->
 //            setProgress(Data.Builder().putInt("Progress", current).build())
 //            Log.d("DownloadProgress", "Downloading $current out of $max")
             setProgress(workDataOf("Progress" to current))
-            showNotification(current, max)
+            setForeground(createForegroundInfo(current))
             Log.d("DownloadProgress", "Setting progress to: $current of $max")
         }
 
@@ -80,6 +86,38 @@ class CatDownloadWorker(val appContext: Context, params: WorkerParameters) :
         return Result.success()
     }
 
+    private fun createForegroundInfo(progress: Int): ForegroundInfo {
+        // This PendingIntent can be used to cancel the worker
+        val intent = WorkManager.getInstance(applicationContext)
+            .createCancelPendingIntent(id)
+
+        // Create a Notification channel if necessary
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannel()
+        }
+
+        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+            .setContentTitle("Downloading")
+            .setContentText("$progress of $DOWNLOAD_LIMIT images")
+            .setSmallIcon(R.drawable.offline_download)
+            .setProgress(DOWNLOAD_LIMIT, progress, false)
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .setOngoing(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            // Add the cancel action to the notification which can
+            // be used to cancel the worker
+            .addAction(android.R.drawable.ic_delete, "Cancel", intent)
+            .build()
+
+        return ForegroundInfo(NOTIFICATION_ID, notification)
+    }
+
+    @Deprecated(
+        message = "showNotification is deprecated in favor of foreground notifications for long-running workers",
+        replaceWith = ReplaceWith(
+            "createForegroundInfo(currentProgress)"
+        )
+    )
     private fun showNotification(currentProgress: Int, maxProgress: Int) {
         val progressNotification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setContentTitle("Downloading")

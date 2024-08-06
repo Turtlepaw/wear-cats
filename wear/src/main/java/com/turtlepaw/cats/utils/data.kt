@@ -28,6 +28,10 @@ fun encodeToBase64(image: Bitmap, compressFormat: CompressFormat?, quality: Int)
     return Base64.getEncoder().encodeToString(byteArrayOS.toByteArray())
 }
 
+fun encodeToBase64(image: ByteArray): String {
+    return Base64.getEncoder().encodeToString(image)
+}
+
 fun decodeBase64(input: ByteArray): Bitmap {
     return BitmapFactory.decodeByteArray(input, 0, input.size)
 }
@@ -38,6 +42,9 @@ fun decodeByteArray(input: String): ByteArray {
 
 val DOWNLOAD_LIMIT = 150
 
+@Deprecated(
+    message = "Deprecated in favor of Room, use AppDatabase#download()"
+)
 class ImageViewModel(private val dataStore: DataStore<Preferences>) : ViewModel() {
     private object PreferencesKeys {
         val IMAGE_KEY = stringSetPreferencesKey("images")

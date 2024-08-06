@@ -7,7 +7,7 @@
     -->
     <string name="hello_world">From the Square world,\nHello, %1$s!</string>
     <string name="tile_label">Daily Animal</string>
-    <string name="complication_label">Animals</string>
+    <string name="complication_label">Animal</string>
 
     <string name="shortcut_short_label">Specific</string>
     <string name="shortcut_long_label">Open Specific Screen</string>
