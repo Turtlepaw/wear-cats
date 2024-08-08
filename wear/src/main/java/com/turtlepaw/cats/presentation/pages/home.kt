@@ -101,6 +101,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.time.LocalDateTime
 import android.util.Base64
+import com.turtlepaw.cats.presentation.MyPetButton
+import com.turtlepaw.cats.presentation.isMyPetAvailable
 
 private const val tag = "CatImageFetch"
 
@@ -650,6 +652,12 @@ fun WearHome(
                 item {
                     FavoritesButton {
                         open(Routes.FAVORITES)
+                    }
+                }
+
+                if(isMyPetAvailable){
+                    item {
+                        MyPetButton(context)
                     }
                 }
 

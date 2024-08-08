@@ -2,6 +2,7 @@ package com.turtlepaw.cats.complication
 
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.util.Log
@@ -25,6 +26,9 @@ import androidx.wear.watchface.complications.datasource.SuspendingComplicationDa
 import coil.imageLoader
 import com.turtlepaw.cats.R
 import com.turtlepaw.cats.presentation.pages.safelyFetchAsync
+import com.turtlepaw.cats.services.ComplicationUpdater
+import com.turtlepaw.cats.tile.DataLoader
+import com.turtlepaw.cats.tile.getImageId
 import com.turtlepaw.cats.tile.loadImage
 import com.turtlepaw.cats.utils.Settings
 import com.turtlepaw.cats.utils.SettingsBasics
@@ -42,18 +46,9 @@ class MainComplicationService : SuspendingComplicationDataSourceService(), ViewM
     )
 
     private suspend fun getImage(): Bitmap {
-        val animalTypes = getSharedPreferences(
-            SettingsBasics.SHARED_PREFERENCES.getKey(),
-            SettingsBasics.SHARED_PREFERENCES.getMode()
-        ).getString(
-            Settings.ANIMALS.getKey(),
-            Settings.ANIMALS.getDefault()
-        )
-        val types = enumFromJSON(animalTypes)
-        val catImages = safelyFetchAsync(1, types)
-        val unprocessedImageData = imageLoader.loadImage(this, catImages.first().url, 500);
-        if(unprocessedImageData != null){
-            return getRoundedCroppedBitmap(unprocessedImageData)
+        val data = DataLoader().getImageAsBitmap(this)
+        if(data != null){
+            return getRoundedCroppedBitmap(data)
         } else {
             throw Exception("Failed to load image")
         }
@@ -97,8 +92,8 @@ class MainComplicationService : SuspendingComplicationDataSourceService(), ViewM
     }
 
     private fun createActivityIntent(context: Context): PendingIntent {
-        val intent = packageManager.getLaunchIntentForPackage(packageName)
-        return PendingIntent.getActivity(
+        val intent = Intent(context, ComplicationUpdater::class.java)
+        return PendingIntent.getBroadcast(
             context,
             0,
             intent,

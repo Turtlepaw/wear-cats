@@ -1,39 +1,29 @@
 package com.turtlepaw.cats.tile
 
-import android.content.Context
-import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.wear.protolayout.ActionBuilders
-import androidx.wear.protolayout.ColorBuilders
-import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.DimensionBuilders.expand
 import androidx.wear.protolayout.LayoutElementBuilders
-import androidx.wear.protolayout.LayoutElementBuilders.CONTENT_SCALE_MODE_FIT
 import androidx.wear.protolayout.LayoutElementBuilders.Image
-import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
-import androidx.wear.protolayout.material.layouts.PrimaryLayout
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tooling.preview.devices.WearDevices
 import coil.imageLoader
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.tools.LayoutRootPreview
-import com.google.android.horologist.compose.tools.buildDeviceParameters
 import com.google.android.horologist.tiles.SuspendingTileService
 import com.turtlepaw.cats.R
 import com.turtlepaw.cats.presentation.pages.safelyFetchAsync
 import com.turtlepaw.cats.utils.Settings
 import com.turtlepaw.cats.utils.SettingsBasics
-import com.turtlepaw.cats.utils.TimeManager
 import com.turtlepaw.cats.utils.enumFromJSON
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import java.time.LocalTime
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 private const val RESOURCES_VERSION = "1"
 const val LAUNCH_APP_ID = "LAUNCH_APP"
@@ -64,7 +54,7 @@ class MainTileService : SuspendingTileService() {
         )
         val types = enumFromJSON(animalTypes)
         val resources = ResourceBuilders.Resources.Builder()
-            .setVersion(RESOURCES_VERSION)
+            .setVersion(generateResourceVersion())
             .addIdToImageMapping(
                 RESOURCE_REFRESH,
                 ResourceBuilders.ImageResource.Builder()
@@ -84,21 +74,13 @@ class MainTileService : SuspendingTileService() {
                     ).build()
             )
 
-        val catImages = safelyFetchAsync(MAX_LIMIT, types)
-        val images = coroutineScope {
-            catImages.map { image ->
-                async {
-                    val imageData = imageLoader.loadImage(this@MainTileService, image.url, 500)
-                    imageData?.let { imageData }
-                }
-            }
-        }.awaitAll().filterNotNull()
-
-        images.forEachIndexed { index, data ->
-            resources.addIdToImageMapping(
-                getImageId(index),
-                bitmapToImageResource(data)
-            )
+        DataLoader().getImage(this).also {
+            if (it != null) {
+                resources.addIdToImageMapping(
+                    getImageId(0),
+                    it
+                )
+            } else throw Exception("Image failed to load")
         }
 
         return resources.build()
@@ -112,9 +94,9 @@ class MainTileService : SuspendingTileService() {
         if (lastClickableId == LAUNCH_APP_ID) {
             hapticClick(applicationContext)
             startActivity(packageManager.getLaunchIntentForPackage(packageName))
-        } else if (lastClickableId.startsWith(MODIFIER_CLICK_REFRESH)) {
+        } else if (lastClickableId == MODIFIER_CLICK_REFRESH) {
             hapticClick(applicationContext)
-            startActivity(packageManager.getLaunchIntentForPackage(packageName))
+            //startActivity(packageManager.getLaunchIntentForPackage(packageName))
             // We can't have more than 1 image
             // since of android.os.TransactionTooLargeException
 //            val index = parseIndexFromId(lastClickableId)
@@ -136,13 +118,19 @@ class MainTileService : SuspendingTileService() {
 
 
         return TileBuilders.Tile.Builder()
-            .setResourcesVersion(RESOURCES_VERSION)
+            .setResourcesVersion(generateResourceVersion())
             .setTileTimeline(singleTileTimeline)
             .setFreshnessIntervalMillis(
                 // Every hour (60000 = 1m, 1m * 60m = 1h)
                 60000 * 60
             )
             .build()
+    }
+
+    private fun generateResourceVersion(): String {
+        val current = LocalDateTime.now()
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+        return current.format(formatter)
     }
 }
 
@@ -163,7 +151,7 @@ private fun layout(currentIndex: Int): LayoutElementBuilders.Box {
 //                        .build()
 //                )
 //                .build()
-            getRefreshModifiers()
+            getRefreshModifiers(LAUNCH_APP_ID)
         )
         .addContent(
             Image.Builder()

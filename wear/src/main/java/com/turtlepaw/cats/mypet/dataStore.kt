@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.LocalDateTime
 
 // Define the DataStore
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "cat_status")
@@ -15,7 +16,9 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "ca
 private val HUNGER_KEY = intPreferencesKey("hunger")
 private val TREATS_KEY = intPreferencesKey("treats")
 private val HAPPINESS_KEY = intPreferencesKey("happiness")
+private val MAX_TREATS_KEY = intPreferencesKey("max_treats")
 private val HAPPINESS_REASONS_KEY = stringPreferencesKey("happiness_reasons")
+private val LAST_FED_KEY = stringPreferencesKey("last_fed")
 
 suspend fun saveCatStatus(context: Context, status: CatStatus) {
     context.dataStore.edit { preferences ->
@@ -24,6 +27,8 @@ suspend fun saveCatStatus(context: Context, status: CatStatus) {
         preferences[HAPPINESS_KEY] = status.happiness
         // Convert happiness reasons map to a string for storage
         preferences[HAPPINESS_REASONS_KEY] = status.happinessReasons.entries.joinToString(",") { "${it.key}:${it.value}" }
+        preferences[LAST_FED_KEY] = status.lastFed.toString()
+        preferences[MAX_TREATS_KEY] = status.maxTreats
     }
 }
 
@@ -31,10 +36,19 @@ fun getCatStatusFlow(context: Context): Flow<CatStatus> {
     return context.dataStore.data.map { preferences ->
         val hunger = preferences[HUNGER_KEY] ?: 0
         val treats = preferences[TREATS_KEY] ?: 0
+        val maxTreats = preferences[MAX_TREATS_KEY] ?: 0
         val happiness = preferences[HAPPINESS_KEY] ?: 0
         val happinessReasonsString = preferences[HAPPINESS_REASONS_KEY] ?: ""
         val happinessReasons = parseHappinessReasons(happinessReasonsString)
-        CatStatus(hunger, treats, happiness, happinessReasons)
+        val lastFedString = preferences[LAST_FED_KEY] ?: ""
+        val lastFed = try {
+            LocalDateTime.parse(lastFedString)
+        } catch (e: Exception) {
+            Log.e("CatStatus", "Error parsing lastFed", e)
+            null
+        }
+
+        CatStatus(hunger, treats, maxTreats, happiness, happinessReasons, lastFed)
     }
 }
 

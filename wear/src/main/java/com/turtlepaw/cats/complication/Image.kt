@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RadialGradient
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
 
@@ -44,7 +45,17 @@ fun getRoundedCroppedBitmap(bitmap: Bitmap): Bitmap {
     val path = Path()
     path.addRoundRect(rect, size / 2f, size / 2f, Path.Direction.CCW)
     canvas.clipPath(path)
-    canvas.drawBitmap(bitmap, null, rect, paint)
+
+    // Calculate the top and left offsets to center the square crop
+    val left = (bitmap.width - size) / 2
+    val top = (bitmap.height - size) / 2
+
+    // Define the source rectangle (the area of the original bitmap to draw)
+    val srcRect = Rect(left, top, left + size, top + size)
+
+    // Draw the central square portion of the original bitmap
+    canvas.drawBitmap(bitmap, srcRect, rect, paint)
 
     return output
 }
+

@@ -59,7 +59,7 @@ fun getRefreshButton(): LayoutElementBuilders.Arc =
                         .setResourceId(RESOURCE_REFRESH)
                         .setWidth(DimensionBuilders.dp(24f))
                         .setHeight(DimensionBuilders.dp(24f))
-                        .setModifiers(getRefreshModifiers())
+                        .setModifiers(getRefreshModifiers(MODIFIER_CLICK_REFRESH))
                         .build()
                 )
                 .setRotateContents(false)
@@ -68,7 +68,7 @@ fun getRefreshButton(): LayoutElementBuilders.Arc =
         .build()
 
 /** @return a modifier for tiles that represents a 'tap to refresh' [ActionBuilders.LoadAction] */
-fun getRefreshModifiers(): ModifiersBuilders.Modifiers {
+fun getRefreshModifiers(id: String): ModifiersBuilders.Modifiers {
     return ModifiersBuilders.Modifiers.Builder()
         .setClickable(
             ModifiersBuilders.Clickable.Builder()
@@ -76,7 +76,7 @@ fun getRefreshModifiers(): ModifiersBuilders.Modifiers {
                     ActionBuilders.LoadAction.Builder().build()
                 )
                 .setId(
-                    getRefreshId()
+                    id
                 )
                 .build()
         )

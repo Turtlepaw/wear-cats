@@ -100,7 +100,7 @@ fun isWorkScheduled(context: Context, uniqueWorkName: String): Boolean {
     return false
 }
 
-const val isOfflineAvailable = false
+const val isOfflineAvailable = true
 
 @SuppressLint("InlinedApi")
 @OptIn(

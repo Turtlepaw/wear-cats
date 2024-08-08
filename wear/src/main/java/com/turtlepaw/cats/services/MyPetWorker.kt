@@ -20,6 +20,8 @@ import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.turtlepaw.cats.mypet.CatStatus
+import com.turtlepaw.cats.mypet.MoodManager
+import com.turtlepaw.cats.mypet.Moods
 import com.turtlepaw.cats.mypet.getCatStatusFlow
 import com.turtlepaw.cats.mypet.saveCatStatus
 import kotlinx.coroutines.CompletableDeferred
@@ -32,7 +34,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
+import kotlin.math.absoluteValue
 
 class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
     Worker(context, workerParams) {
@@ -119,42 +124,38 @@ class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
 
     private suspend fun updateCatStatus(context: Context, steps: Long) {
         val catStatus = getCatStatusFlow(context).firstOrNull() ?: CatStatus(
-            hunger = 0,
+            hunger = 100,
             treats = 0,
+            maxTreats = 0,
             happinessReasons = mapOf(),
-            happiness = 0
+            happiness = 1,
+            lastFed = null
         )
+
+        val moods = MoodManager.fromMap(catStatus.happinessReasons)
 
         // Calculate the number of treats to add based on steps
         val treatsToAdd = (steps.toInt() / 100).coerceAtLeast(0)
+        val treats = if(catStatus.lastFed == null) treatsToAdd else treatsToAdd.minus(catStatus.maxTreats)
+        Log.d("MyPetWorker", "Treats to add: $treatsToAdd / ${catStatus.maxTreats}")
 
-        // Update treats and calculate hunger impact
-        val newTreats = catStatus.treats + treatsToAdd
+        val hungerLevel = if(catStatus.lastFed == null)
+            100 else calculateHungerLevel(catStatus.lastFed)
 
-        // Decrease hunger based on the number of treats fed
-        val hungerDecrease = treatsToAdd * 5 // Example: each treat decreases hunger by 5
-        val newHunger = (catStatus.hunger - hungerDecrease).coerceAtLeast(0)
-
-        // Increment happiness based on steps
-        val happinessIncrement = steps.toInt() / 500 // Example scaling
-        val newHappiness = (catStatus.happiness + happinessIncrement).coerceAtMost(100)
-
-        // Ensure that happiness reasons are updated accordingly
-        val updatedHappinessReasons = mutableMapOf<String, Int>()
-        if (happinessIncrement > 0) {
-            updatedHappinessReasons["Steps"] = happinessIncrement
+        Log.d("MyPetWorker", "Happiness ${(hungerLevel - 100).absoluteValue} / ${hungerLevel}")
+        if (hungerLevel > 50){
+            moods.overrideMood(Moods.Hunger.toString(), -(hungerLevel / 10))
+        } else {
+            moods.overrideMood(Moods.Hunger.toString(), (hungerLevel / 10))
         }
-
-        // Handle the case when no treats are fed, increase hunger over time
-        val hungerIncrement = 1 // Example: hunger increases by 1 if no treats are fed
-        val hungerAfterNoTreats = (newHunger + hungerIncrement).coerceAtMost(100)
 
         // Prepare updated cat status
         val updatedCatStatus = catStatus.copy(
-            treats = newTreats,
-            hunger = hungerAfterNoTreats,
-            happiness = newHappiness,
-            happinessReasons = updatedHappinessReasons
+            maxTreats = treatsToAdd,
+            treats = treats.absoluteValue,
+            hunger = hungerLevel,
+            happiness = (hungerLevel - 100).absoluteValue,
+            happinessReasons = moods.toMap()
         )
 
         Log.d("MyPetWorker", "Updated cat status: $updatedCatStatus")
@@ -163,6 +164,19 @@ class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
         saveCatStatus(context, updatedCatStatus)
     }
 
+    fun calculateHungerLevel(lastFedDate: LocalDateTime): Int {
+        val currentDate = LocalDateTime.now()
+        val hoursSinceLastFed = ChronoUnit.HOURS.between(lastFedDate, currentDate)
+
+        // Assuming the cat gets fully hungry in 24 hours
+        val maxHungerHours = 24
+
+        // Normalize the hours since last fed to a value between 1 and 100
+        val hungerLevel = ((hoursSinceLastFed.toDouble() / maxHungerHours) * 100).toInt()
+
+        // Ensure the hunger level is within the range of 1 to 100
+        return hungerLevel.coerceIn(1, 100)
+    }
 }
 
 fun Context.scheduleMyPetWorker() {
@@ -170,7 +184,9 @@ fun Context.scheduleMyPetWorker() {
         .setBackoffCriteria(BackoffPolicy.LINEAR, 1, TimeUnit.MINUTES)
         .build()
     WorkManager.getInstance(this).enqueueUniqueWork("worker", ExistingWorkPolicy.REPLACE, workRequest)
+}
 
+fun Context.schedulePeriodicMyPetWorker() {
     val periodicWorkRequest = PeriodicWorkRequestBuilder<MyPetWorker>(Duration.ofMinutes(35))
         .setBackoffCriteria(BackoffPolicy.LINEAR, 1, TimeUnit.MINUTES)
         .build()

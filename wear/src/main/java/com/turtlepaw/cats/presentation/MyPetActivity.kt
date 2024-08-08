@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,8 +54,9 @@ import androidx.wear.compose.material.Text
 import com.turtlepaw.cats.R
 import com.turtlepaw.cats.mypet.CatStatus
 import com.turtlepaw.cats.presentation.mypet.Happiness
+import com.turtlepaw.cats.services.schedulePeriodicMyPetWorker
 
-const val isMyPetAvailable = false;
+const val isMyPetAvailable = true;
 @Composable
 fun MyPetButton(context: Context) {
     return Button(
@@ -71,9 +73,10 @@ fun MyPetButton(context: Context) {
         ) {
             Box(modifier = Modifier.padding(end = 10.dp)) {
                 Icon(
-                    painter = painterResource(id = R.drawable.round_auto_awesome_24),
-                    contentDescription = "Auto Awesome",
+                    painter = painterResource(id = R.drawable.cat_white),
+                    contentDescription = "Cat",
                     tint = MaterialTheme.colors.onPrimary,
+                    modifier = Modifier.size(26.dp)
                 )
             }
             Text(
@@ -104,6 +107,7 @@ class MyPetActivity : ComponentActivity() {
 
         setTheme(android.R.style.Theme_DeviceDefault)
         scheduleMyPetWorker()
+        schedulePeriodicMyPetWorker()
 
         setContent {
             val themeViewModel = ViewModelProvider(

@@ -1,0 +1,341 @@
+<?xml version="1.0"?><!--
+    Copyright 2023 Google LLC
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        https://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+<!--
+    Basic example of a text-only, digital watch face, demonstrating:
+    
+    - Use of TimeText for digital watch faces
+    - Showing different styling in ambient mode, via the Variant element
+    - Localization using Android string resources
+-->
+<WatchFace
+    height="450"
+    width="450">
+    <Metadata
+        key="CLOCK_TYPE"
+        value="DIGITAL" />
+    <Metadata
+        key="PREVIEW_TIME"
+        value="10:00:00" />
+    <Scene backgroundColor="#ff000000">
+        <!--    <DigitalClock x="0" y="0" width="450" height="450">-->
+        <!--      &lt;!&ndash; For further attributes see:-->
+        <!--          https://developer.android.com/training/wearables/wff/clock/time-text &ndash;&gt;-->
+        <!--      &lt;!&ndash; SYNC_TO_DEVICE specifies to respect the device 12/24h setting &ndash;&gt;-->
+        <!--      &lt;!&ndash; Interactive mode version&ndash;&gt;-->
+        <!--      <TimeText format="hh:mm" hourFormat="SYNC_TO_DEVICE" align="CENTER" x="0" y="175" width="450" height="100" alpha="255">-->
+        <!--        <Variant mode="AMBIENT" target="alpha" value="0"/>-->
+        <!--        &lt;!&ndash; Specifying the watch's default font-family by using SYNC_TO_DEVICE instead of a named family &ndash;&gt;-->
+        <!--        <Font family="SYNC_TO_DEVICE" size="128" weight="NORMAL" slant="NORMAL" color="#ffffffff"/>-->
+        <!--      </TimeText>-->
+        <!--      &lt;!&ndash; Ambient mode version - thinner weight &ndash;&gt;-->
+        <!--      <TimeText format="hh:mm" hourFormat="SYNC_TO_DEVICE" align="CENTER" x="0" y="175" width="450" height="100" alpha="0">-->
+        <!--        &lt;!&ndash; Specifying the watch's default family by using SYNC_TO_DEVICE &ndash;&gt;-->
+        <!--        <Variant mode="AMBIENT" target="alpha" value="255"/>-->
+        <!--        <Font family="SYNC_TO_DEVICE" size="128" weight="THIN" slant="NORMAL" color="#ffffffff"/>-->
+        <!--      </TimeText>-->
+        <!--    </DigitalClock>-->
+      <ComplicationSlot
+          name="Circle Complication_0"
+          alpha="255"
+          displayName="Circle Complication"
+          height="450"
+          isCustomizable="FALSE"
+          pivotX="0.5"
+          pivotY="0.5"
+          slotId="0"
+          supportedTypes="SMALL_IMAGE EMPTY"
+          width="450"
+          x="0"
+          y="0">
+        <DefaultProviderPolicy
+            defaultSystemProvider="EMPTY"
+            defaultSystemProviderType="EMPTY"
+            primaryProvider="com.turtlepaw.cats/com.turtlepaw.cats.complication.MainComplicationService"
+            primaryProviderType="SMALL_IMAGE"/>
+        <BoundingOval
+            height="450"
+            width="450"
+            x="0"
+            y="0" />
+        <Complication type="SMALL_IMAGE">
+          <PartImage
+              name="Image_7c03"
+              alpha="255"
+              height="450"
+              pivotX="0.5"
+              pivotY="0.5"
+              width="450"
+              x="0"
+              y="0">
+            <Image resource="[COMPLICATION.SMALL_IMAGE]" />
+          </PartImage>
+        </Complication>
+        <Complication type="EMPTY" />
+      </ComplicationSlot>
+        <PartImage
+            name="Vignette_v2_cccc"
+            alpha="255"
+            height="450"
+            pivotX="0.5"
+            pivotY="0.5"
+            width="450"
+            x="0"
+            y="0">
+            <Image resource="vignette_wf" />
+        </PartImage>
+        <DigitalClock
+            alpha="255"
+            height="113"
+            pivotX="0.5"
+            pivotY="0.5"
+            width="292"
+            x="82"
+            y="295">
+            <TimeText
+                align="CENTER"
+                alpha="255"
+                format="h:mm"
+                height="113"
+                hourFormat="SYNC_TO_DEVICE"
+                width="292"
+                x="0"
+                y="0">
+                <Font
+                    color="#ffffffff"
+                    family="SYNC_TO_DEVICE"
+                    size="100"
+                    slant="NORMAL"
+                    weight="NORMAL" />
+                <!--        <Font-->
+                <!--            color="#ffffffff"-->
+                <!--            family="wfs_varelaround_regular_9f013a69_6845_40c0_bbda_860ee6bba7a2"-->
+                <!--            size="96"-->
+                <!--            slant="NORMAL"-->
+                <!--            weight="NORMAL" />-->
+            </TimeText>
+        </DigitalClock>
+<!--        <ComplicationSlot-->
+<!--            name="Line Complication_1"-->
+<!--            alpha="255"-->
+<!--            displayName="Line Complication"-->
+<!--            height="40"-->
+<!--            isCustomizable="TRUE"-->
+<!--            pivotX="0.5"-->
+<!--            pivotY="0.5"-->
+<!--            slotId="1"-->
+<!--            supportedTypes="SHORT_TEXT"-->
+<!--            width="186"-->
+<!--            x="132"-->
+<!--            y="240">-->
+<!--            <DefaultProviderPolicy-->
+<!--                defaultSystemProvider="WATCH_BATTERY"-->
+<!--                defaultSystemProviderType="SHORT_TEXT" />-->
+<!--            <BoundingBox-->
+<!--                height="40"-->
+<!--                width="186"-->
+<!--                x="0"-->
+<!--                y="0" />-->
+<!--            <Complication type="SHORT_TEXT">-->
+<!--                <Condition>-->
+<!--                    <Expressions>-->
+<!--                        <Expression name="shortText">-->
+<!--                            <![CDATA[[COMPLICATION.TITLE] == null && [COMPLICATION.MONOCHROMATIC_IMAGE] == null]]></Expression>-->
+<!--                        <Expression name="shortTextIcon">-->
+<!--                            <![CDATA[[COMPLICATION.TITLE] == null && [COMPLICATION.MONOCHROMATIC_IMAGE] != null]]></Expression>-->
+<!--                        <Expression name="shortTextTitle">-->
+<!--                            <![CDATA[[COMPLICATION.TITLE] != null && [COMPLICATION.MONOCHROMATIC_IMAGE] == null]]></Expression>-->
+<!--                    </Expressions>-->
+<!--                    <Compare expression="shortText">-->
+<!--                        <PartText-->
+<!--                            name="Text_bb85"-->
+<!--                            alpha="255"-->
+<!--                            height="28"-->
+<!--                            pivotX="0.5"-->
+<!--                            pivotY="0.5"-->
+<!--                            width="186"-->
+<!--                            x="0"-->
+<!--                            y="6">-->
+<!--                            <Text-->
+<!--                                align="CENTER"-->
+<!--                                ellipsis="TRUE">-->
+<!--                                <Font-->
+<!--                                    color="#ffffffff"-->
+<!--                                    family="SYNC_TO_DEVICE"-->
+<!--                                    size="25"-->
+<!--                                    slant="NORMAL"-->
+<!--                                    weight="NORMAL">-->
+<!--                                    <Template>%s-->
+<!--                                        <Parameter expression="[COMPLICATION.TEXT]" />-->
+<!--                                    </Template>-->
+<!--                                </Font>-->
+<!--                            </Text>-->
+<!--                        </PartText>-->
+<!--                    </Compare>-->
+<!--                    <Compare expression="shortTextIcon">-->
+<!--                        <PartImage-->
+<!--                            name="Icon_ac0e"-->
+<!--                            alpha="255"-->
+<!--                            height="28"-->
+<!--                            pivotX="0.5"-->
+<!--                            pivotY="0.5"-->
+<!--                            width="28"-->
+<!--                            x="79"-->
+<!--                            y="6">-->
+<!--                            <Image resource="[COMPLICATION.MONOCHROMATIC_IMAGE]" />-->
+<!--                        </PartImage>-->
+<!--                        <PartText-->
+<!--                            name="Text_784e"-->
+<!--                            alpha="255"-->
+<!--                            height="28"-->
+<!--                            pivotX="0.5"-->
+<!--                            pivotY="0.5"-->
+<!--                            width="148"-->
+<!--                            x="19"-->
+<!--                            y="6">-->
+<!--                            <Text-->
+<!--                                -->
+<!--                                ellipsis="TRUE">-->
+<!--                                <Font-->
+<!--                                    color="#ffffffff"-->
+<!--                                    family="SYNC_TO_DEVICE"-->
+<!--                                    size="25"-->
+<!--                                    slant="NORMAL"-->
+<!--                                    weight="NORMAL">-->
+<!--                                    <Template>%s-->
+<!--                                        <Parameter expression="[COMPLICATION.TEXT]" />-->
+<!--                                    </Template>-->
+<!--                                </Font>-->
+<!--                            </Text>-->
+<!--                        </PartText>-->
+<!--                    </Compare>-->
+<!--                    <Compare expression="shortTextTitle">-->
+<!--                        <PartText-->
+<!--                            name="Text_e30c"-->
+<!--                            alpha="255"-->
+<!--                            height="28"-->
+<!--                            pivotX="0.5"-->
+<!--                            pivotY="0.5"-->
+<!--                            width="104"-->
+<!--                            x="41"-->
+<!--                            y="6">-->
+<!--                            <Text-->
+<!--                                align="CENTER"-->
+<!--                                ellipsis="TRUE">-->
+<!--                                <Font-->
+<!--                                    color="#ffffffff"-->
+<!--                                    family="SYNC_TO_DEVICE"-->
+<!--                                    size="25"-->
+<!--                                    slant="NORMAL"-->
+<!--                                    weight="NORMAL">-->
+<!--                                    <Template>%s-->
+<!--                                        <Parameter expression="[COMPLICATION.TEXT]" />-->
+<!--                                    </Template>-->
+<!--                                </Font>-->
+<!--                            </Text>-->
+<!--                        </PartText>-->
+<!--                        <PartText-->
+<!--                            name="Title_300d"-->
+<!--                            alpha="255"-->
+<!--                            height="28"-->
+<!--                            pivotX="0.5"-->
+<!--                            pivotY="0.5"-->
+<!--                            width="72"-->
+<!--                            x="104"-->
+<!--                            y="6">-->
+<!--                            <Text-->
+<!--                                align="CENTER"-->
+<!--                                ellipsis="TRUE">-->
+<!--                                <Font-->
+<!--                                    color="#ffadadad"-->
+<!--                                    family="SYNC_TO_DEVICE"-->
+<!--                                    size="20"-->
+<!--                                    slant="NORMAL"-->
+<!--                                    weight="NORMAL">-->
+<!--                                    <Template>%s-->
+<!--                                        <Parameter expression="[COMPLICATION.TITLE]" />-->
+<!--                                    </Template>-->
+<!--                                </Font>-->
+<!--                            </Text>-->
+<!--                        </PartText>-->
+<!--                    </Compare>-->
+<!--                    <Default>-->
+<!--                        <PartImage-->
+<!--                            name="Icon_ca89"-->
+<!--                            alpha="255"-->
+<!--                            height="28"-->
+<!--                            pivotX="0.5"-->
+<!--                            pivotY="0.5"-->
+<!--                            width="28"-->
+<!--                            x="79"-->
+<!--                            y="6">-->
+<!--                            <Image resource="[COMPLICATION.MONOCHROMATIC_IMAGE]" />-->
+<!--                        </PartImage>-->
+<!--                        <PartText-->
+<!--                            name="Text_1aba"-->
+<!--                            alpha="255"-->
+<!--                            height="28"-->
+<!--                            pivotX="0.5"-->
+<!--                            pivotY="0.5"-->
+<!--                            width="86"-->
+<!--                            x="50"-->
+<!--                            y="6">-->
+<!--                            <Text-->
+<!--                                align="CENTER"-->
+<!--                                ellipsis="TRUE">-->
+<!--                                <Font-->
+<!--                                    color="#ffffffff"-->
+<!--                                    family="SYNC_TO_DEVICE"-->
+<!--                                    size="25"-->
+<!--                                    slant="NORMAL"-->
+<!--                                    weight="NORMAL">-->
+<!--                                    <Template>%s-->
+<!--                                        <Parameter expression="[COMPLICATION.TEXT]" />-->
+<!--                                    </Template>-->
+<!--                                </Font>-->
+<!--                            </Text>-->
+<!--                        </PartText>-->
+<!--                        <PartText-->
+<!--                            name="Title_a721"-->
+<!--                            alpha="255"-->
+<!--                            height="28"-->
+<!--                            pivotX="0.5"-->
+<!--                            pivotY="0.5"-->
+<!--                            width="60"-->
+<!--                            x="113"-->
+<!--                            y="6">-->
+<!--                            <Text-->
+<!--                                align="CENTER"-->
+<!--                                ellipsis="TRUE">-->
+<!--                                <Font-->
+<!--                                    color="#ffadadad"-->
+<!--                                    family="SYNC_TO_DEVICE"-->
+<!--                                    size="20"-->
+<!--                                    slant="NORMAL"-->
+<!--                                    weight="NORMAL">-->
+<!--                                    <Template>%s-->
+<!--                                        <Parameter expression="[COMPLICATION.TITLE]" />-->
+<!--                                    </Template>-->
+<!--                                </Font>-->
+<!--                            </Text>-->
+<!--                        </PartText>-->
+<!--                    </Default>-->
+<!--                </Condition>-->
+<!--            </Complication>-->
+<!--            <Complication type="EMPTY" />-->
+<!--        </ComplicationSlot>-->
+
+    </Scene>
+</WatchFace>

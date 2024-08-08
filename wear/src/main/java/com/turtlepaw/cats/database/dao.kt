@@ -15,6 +15,9 @@ interface ImageDao {
     @Query("SELECT * FROM images ORDER BY RANDOM()")
     suspend fun getImages(): List<Image>
 
+    @Query("SELECT * FROM images ORDER BY RANDOM() LIMIT 1")
+    suspend fun getRandomImage(): Image
+
     @Query("DELETE FROM images")
     suspend fun deleteAllImages()
 
