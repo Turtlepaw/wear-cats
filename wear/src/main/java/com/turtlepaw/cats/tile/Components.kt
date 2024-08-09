@@ -57,8 +57,8 @@ fun getRefreshButton(): LayoutElementBuilders.Arc =
                 .setContent(
                     LayoutElementBuilders.Image.Builder()
                         .setResourceId(RESOURCE_REFRESH)
-                        .setWidth(DimensionBuilders.dp(24f))
-                        .setHeight(DimensionBuilders.dp(24f))
+                        .setWidth(DimensionBuilders.dp(30f))
+                        .setHeight(DimensionBuilders.dp(30f))
                         .setModifiers(getRefreshModifiers(MODIFIER_CLICK_REFRESH))
                         .build()
                 )

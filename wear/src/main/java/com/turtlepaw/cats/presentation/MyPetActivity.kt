@@ -56,7 +56,7 @@ import com.turtlepaw.cats.mypet.CatStatus
 import com.turtlepaw.cats.presentation.mypet.Happiness
 import com.turtlepaw.cats.services.schedulePeriodicMyPetWorker
 
-const val isMyPetAvailable = true;
+const val isMyPetAvailable = false;
 @Composable
 fun MyPetButton(context: Context) {
     return Button(
