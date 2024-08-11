@@ -5,37 +5,21 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Icon
-import android.util.Log
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.wear.watchface.complications.data.ComplicationData
 import androidx.wear.watchface.complications.data.ComplicationType
-import androidx.wear.watchface.complications.data.LongTextComplicationData
-import androidx.wear.watchface.complications.data.MonochromaticImage
-import androidx.wear.watchface.complications.data.MonochromaticImageComplicationData
 import androidx.wear.watchface.complications.data.PhotoImageComplicationData
 import androidx.wear.watchface.complications.data.PlainComplicationText
-import androidx.wear.watchface.complications.data.RangedValueComplicationData
-import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.data.SmallImage
 import androidx.wear.watchface.complications.data.SmallImageComplicationData
 import androidx.wear.watchface.complications.data.SmallImageType
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
-import coil.imageLoader
 import com.turtlepaw.cats.R
-import com.turtlepaw.cats.presentation.pages.safelyFetchAsync
 import com.turtlepaw.cats.services.ComplicationUpdater
 import com.turtlepaw.cats.tile.DataLoader
-import com.turtlepaw.cats.tile.getImageId
-import com.turtlepaw.cats.tile.loadImage
-import com.turtlepaw.cats.utils.Settings
-import com.turtlepaw.cats.utils.SettingsBasics
-import com.turtlepaw.cats.utils.enumFromJSON
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import com.turtlepaw.cats.utils.decodeBitmapFromRawResource
 
 
 class MainComplicationService : SuspendingComplicationDataSourceService(), ViewModelStoreOwner {
@@ -60,7 +44,9 @@ class MainComplicationService : SuspendingComplicationDataSourceService(), ViewM
         }
         return createComplicationData(
             type,
-            Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+            getRoundedCroppedBitmap(
+                decodeBitmapFromRawResource(this, R.raw.preview) ?: Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+            )
         )
     }
 

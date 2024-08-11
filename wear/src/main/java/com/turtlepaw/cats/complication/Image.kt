@@ -59,3 +59,25 @@ fun getRoundedCroppedBitmap(bitmap: Bitmap): Bitmap {
     return output
 }
 
+fun getCroppedSquareBitmap(bitmap: Bitmap): Bitmap {
+    val size = bitmap.width.coerceAtMost(bitmap.height)
+    val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(output)
+
+    val paint = Paint()
+
+    // Calculate the top and left offsets to center the square crop
+    val left = (bitmap.width - size) / 2
+    val top = (bitmap.height - size) / 2
+
+    // Define the source rectangle (the area of the original bitmap to draw)
+    val srcRect = Rect(left, top, left + size, top + size)
+
+    // Define the destination rectangle (the area to draw the cropped bitmap)
+    val destRect = Rect(0, 0, size, size)
+
+    // Draw the central square portion of the original bitmap
+    canvas.drawBitmap(bitmap, srcRect, destRect, paint)
+
+    return output
+}

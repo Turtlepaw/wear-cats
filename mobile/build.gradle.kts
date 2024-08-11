@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.turtlepaw.sunlight"
+    namespace = "com.turtlepaw.cats"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.turtlepaw.sunlight"
+        applicationId = "com.turtlepaw.cats"
         minSdk = 30
         targetSdk = 34
         versionCode = 1

@@ -18,7 +18,8 @@ suspend fun feedCatTreat(context: Context, treatsUsed: Int) {
     val catStatus = getCatStatusFlow(context).firstOrNull() ?: CatStatus(
         hunger = 0,
         treats = 0,
-        maxTreats = 0,
+        dailyTreatsAvailable = 0,
+        lastUpdate = null,
         happinessReasons = mapOf(),
         happiness = 0,
         lastFed = LocalDateTime.now()

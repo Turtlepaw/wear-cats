@@ -7,9 +7,11 @@
 package com.turtlepaw.cats.presentation
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.util.Base64
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,6 +28,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import coil.imageLoader
+import com.turtlepaw.cats.complication.getCroppedSquareBitmap
 import com.turtlepaw.cats.database.AppDatabase
 import com.turtlepaw.cats.database.ThemeViewModel
 import com.turtlepaw.cats.database.ThemeViewModelFactory
@@ -38,12 +42,14 @@ import com.turtlepaw.cats.presentation.pages.settings.ThemePicker
 import com.turtlepaw.cats.presentation.pages.settings.WearSettings
 import com.turtlepaw.cats.presentation.pages.settings.isOfflineAvailable
 import com.turtlepaw.cats.presentation.theme.SleepTheme
+import com.turtlepaw.cats.tile.loadImage
 import com.turtlepaw.cats.utils.ImageControls
 import com.turtlepaw.cats.utils.Settings
 import com.turtlepaw.cats.utils.SettingsBasics
 import com.turtlepaw.cats.utils.enumFromJSON
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 
 
 enum class Routes(private val route: String) {

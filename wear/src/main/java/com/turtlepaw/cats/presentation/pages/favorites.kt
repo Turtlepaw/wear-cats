@@ -1,6 +1,10 @@
 package com.turtlepaw.cats.presentation.pages
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.os.Environment
+import android.util.Base64
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -40,13 +44,21 @@ import androidx.wear.compose.material.Text
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
+import coil.imageLoader
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.turtlepaw.cats.R
+import com.turtlepaw.cats.complication.getCroppedSquareBitmap
 import com.turtlepaw.cats.database.AppDatabase
 import com.turtlepaw.cats.presentation.components.Page
+import com.turtlepaw.cats.tile.loadImage
+import com.turtlepaw.cats.utils.decodeBase64
 import com.turtlepaw.cats.utils.decodeByteArray
 import com.valentinilk.shimmer.shimmer
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStreamWriter
 
 @Composable
 fun FavoritesButton(openSettings: () -> Unit) {
@@ -75,6 +87,43 @@ fun FavoritesButton(openSettings: () -> Unit) {
     }
 }
 
+fun saveBase64StringToInternalStorage(context: Context, base64String: String, fileName: String) {
+    try {
+        // Save the file to the internal storage directory
+        val file = File(context.filesDir, "$fileName.txt")
+
+        val fos = FileOutputStream(file)
+        val writer = OutputStreamWriter(fos)
+        writer.write(base64String)
+        writer.close()
+
+        Log.d("Base64Save", "Base64 string saved to: ${file.absolutePath}")
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+fun saveBase64StringToExternalStorage(context: Context, base64String: String, fileName: String) {
+    try {
+        // Get the external storage directory (Downloads folder)
+        val downloadsDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+        val file = File(downloadsDir, "$fileName.txt")
+
+        // Write the Base64 string to the file
+        val fos = FileOutputStream(file)
+        val writer = OutputStreamWriter(fos)
+        writer.write(base64String)
+        writer.close()
+
+        // Log the file path
+        Log.d("Base64Save", "Base64 string saved to: ${file.absolutePath}")
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+
+
 @OptIn(
     ExperimentalHorologistApi::class, ExperimentalWearFoundationApi::class,
     ExperimentalFoundationApi::class, ExperimentalWearMaterialApi::class
@@ -91,6 +140,7 @@ fun Favorites(
         animalPhotos = database.favoritesDao().getFavorites().map {
             it.id to decodeByteArray(it.value)
         }
+        Log.d("Favorites", animalPhotos.size.toString())
         isLoading = false
     }
 
