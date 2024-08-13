@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlinAndroid)
     kotlin("plugin.serialization") version "1.9.22"
     id("com.google.devtools.ksp")
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -14,8 +15,8 @@ android {
         applicationId = "com.turtlepaw.cats"
         minSdk = 30
         targetSdk = 33
-        versionCode = 11
-        versionName = "1.2"
+        versionCode = 13
+        versionName = "1.3"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -59,13 +60,13 @@ android {
 dependencies {
     implementation(libs.androidx.health.services.client)
 
-    implementation("com.google.guava:guava:31.0.1-android")
+    implementation("com.google.guava:guava:33.2.1-android")
 
     // To use CallbackToFutureAdapter
-    implementation("androidx.concurrent:concurrent-futures:1.1.0")
+    implementation("androidx.concurrent:concurrent-futures:1.2.0")
 
     // Kotlin
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.8.1")
 
     // Room
     ksp(libs.androidx.room.compiler)

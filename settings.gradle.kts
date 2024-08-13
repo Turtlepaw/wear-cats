@@ -19,7 +19,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Sleep"
+rootProject.name = "Animals"
 include(":mobile")
 include(":wear")
  

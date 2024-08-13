@@ -22,7 +22,9 @@ import androidx.work.WorkerParameters
 import com.turtlepaw.cats.mypet.CatStatus
 import com.turtlepaw.cats.mypet.MoodManager
 import com.turtlepaw.cats.mypet.Moods
+import com.turtlepaw.cats.mypet.defaultStepGoal
 import com.turtlepaw.cats.mypet.getCatStatusFlow
+import com.turtlepaw.cats.mypet.getStepGoalFlow
 import com.turtlepaw.cats.mypet.saveCatStatus
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -124,6 +126,7 @@ class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
     }
 
     private suspend fun updateCatStatus(context: Context, steps: Long) {
+        val stepsGoal = getStepGoalFlow(context).firstOrNull() ?: defaultStepGoal
         val catStatus = getCatStatusFlow(context).firstOrNull() ?: CatStatus(
             hunger = 100,
             treats = 0,
@@ -134,23 +137,27 @@ class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
             lastUpdate = null
         )
 
-        // Calculate the number of treats to add based on steps
-        val treatsToAdd = (steps.toInt() / 100).coerceAtLeast(0)
-        val maxTreatsToday = MAX_TREATS_PER_DAY
+        // Calculate the proportion of the step goal completed
+        val stepGoalCompletionRatio = (steps.toDouble() / stepsGoal.toDouble()).coerceAtMost(1.0)
+
+        // Calculate the number of treats to add based on the step goal completion
+        val treatsToAdd = (stepGoalCompletionRatio * MAX_TREATS_PER_DAY).toInt()
+
+        // Ensure we don't exceed the daily treat cap
         val treatsAddedToday = if (catStatus.lastFed == null || catStatus.lastUpdate == null) {
             // If the cat hasn't been fed today, use the cap
-            minOf(treatsToAdd, maxTreatsToday)
+            minOf(treatsToAdd, catStatus.dailyTreatsAvailable)
         } else {
             // Calculate remaining treats based on previous day's total
-            val treatsRemainingToday = maxTreatsToday - catStatus.treats
+            val treatsRemainingToday = catStatus.dailyTreatsAvailable - catStatus.treats
             minOf(treatsToAdd, treatsRemainingToday).coerceAtLeast(0)
-        }
+        }.coerceAtMost(MAX_TREATS_PER_DAY)
 
         // Log for debugging
         Log.d("MyPetWorker", "Treats to add: $treatsToAdd / Treats added today: $treatsAddedToday")
 
         // Update treats
-        val updatedTreats = (catStatus.treats + treatsAddedToday).coerceAtMost(maxTreatsToday)
+        val updatedTreats = (catStatus.treats + treatsAddedToday).coerceAtMost(MAX_TREATS_PER_DAY)
 
         // Calculate hunger level
         val hungerLevel = if (catStatus.lastFed == null)
@@ -158,7 +165,7 @@ class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
 
         Log.d("MyPetWorker", "Happiness ${(hungerLevel - 100).absoluteValue} / ${hungerLevel}")
         val moods = MoodManager.fromMap(catStatus.happinessReasons)
-        if (hungerLevel > 50){
+        if (hungerLevel > 50) {
             moods.overrideMood(Moods.Hunger.toString(), -(hungerLevel / 10))
         } else {
             moods.overrideMood(Moods.Hunger.toString(), (hungerLevel / 10))
@@ -166,7 +173,7 @@ class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
 
         // Prepare updated cat status
         val updatedCatStatus = catStatus.copy(
-            dailyTreatsAvailable = maxTreatsToday - updatedTreats, // Track remaining treats for today
+            dailyTreatsAvailable = MAX_TREATS_PER_DAY - updatedTreats, // Track remaining treats for today
             treats = updatedTreats,
             hunger = hungerLevel,
             happiness = (hungerLevel - 100).absoluteValue,
@@ -180,6 +187,7 @@ class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
         // Update the cat's status
         saveCatStatus(context, updatedCatStatus)
     }
+
 
     fun calculateHungerLevel(lastFedDate: LocalDateTime): Int {
         val currentDate = LocalDateTime.now()

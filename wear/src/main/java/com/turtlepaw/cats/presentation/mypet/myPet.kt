@@ -36,6 +36,7 @@ import com.turtlepaw.cats.mypet.CatStatus
 import com.turtlepaw.cats.presentation.MyPetRoutes
 import com.turtlepaw.cats.presentation.components.Page
 import com.turtlepaw.cats.presentation.navigate
+import com.turtlepaw.cats.presentation.pages.SettingsButton
 import kotlinx.coroutines.delay
 import java.util.Locale
 
@@ -112,9 +113,7 @@ fun MyPetHome(
             item {
                 Text(
                     text = "Your cat is ${
-                        happinessToReadableText(data.happiness).toLowerCase(
-                            Locale.ROOT
-                        )
+                        happinessToReadableText(data.happiness).lowercase()
                     }!", textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 5.dp)
                 )
@@ -125,7 +124,7 @@ fun MyPetHome(
             item {
                 TitleCard(
                     onClick = {
-                        navController.navigate(MyPetRoutes.HUNGER)
+                        navController.navigate(MyPetRoutes.Hunger.getRoute())
                     },
                     title = {
                         Text(text = "Hunger")
@@ -138,7 +137,7 @@ fun MyPetHome(
             item {
                 TitleCard(
                     onClick = {
-                        navController.navigate(MyPetRoutes.HAPPINESS)
+                        navController.navigate(MyPetRoutes.Happiness.getRoute())
                     },
                     title = {
                         Text(text = "Happiness")
@@ -146,6 +145,11 @@ fun MyPetHome(
                     backgroundPainter = CardDefaults.surfaceBackground()
                 ) {
                     Text(text = happinessToReadableText(data.happiness))
+                }
+            }
+            item {
+                SettingsButton {
+                    navController.navigate(MyPetRoutes.Settings.getRoute())
                 }
             }
         }

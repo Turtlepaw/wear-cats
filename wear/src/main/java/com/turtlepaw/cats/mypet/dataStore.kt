@@ -21,6 +21,21 @@ private val HAPPINESS_REASONS_KEY = stringPreferencesKey("happiness_reasons")
 private val LAST_FED_KEY = stringPreferencesKey("last_fed")
 private val LAST_UPDATE_KEY = stringPreferencesKey("last_update") // Add a key for last update
 
+private val STEP_GOAL = intPreferencesKey("STEP_GOAL")
+const val defaultStepGoal = 5000
+
+suspend fun saveStepGoal(context: Context, stepGoal: Int) {
+    context.dataStore.edit { preferences ->
+        preferences[STEP_GOAL] = stepGoal
+    }
+}
+
+fun getStepGoalFlow(context: Context): Flow<Int> {
+    return context.dataStore.data.map { preferences ->
+        preferences[STEP_GOAL] ?: defaultStepGoal
+    }
+}
+
 suspend fun saveCatStatus(context: Context, status: CatStatus) {
     context.dataStore.edit { preferences ->
         preferences[HUNGER_KEY] = status.hunger

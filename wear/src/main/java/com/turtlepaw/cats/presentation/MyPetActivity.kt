@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,8 +43,6 @@ import com.turtlepaw.cats.presentation.mypet.MyPetsHunger
 import com.turtlepaw.cats.presentation.theme.SleepTheme
 import com.turtlepaw.cats.services.scheduleMyPetWorker
 import com.turtlepaw.cats.utils.SettingsBasics
-import kotlinx.coroutines.flow.first
-import androidx.lifecycle.lifecycleScope
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
@@ -53,10 +50,17 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.turtlepaw.cats.R
 import com.turtlepaw.cats.mypet.CatStatus
+import com.turtlepaw.cats.mypet.defaultStepGoal
+import com.turtlepaw.cats.mypet.getStepGoalFlow
+import com.turtlepaw.cats.mypet.saveStepGoal
 import com.turtlepaw.cats.presentation.mypet.Happiness
+import com.turtlepaw.cats.presentation.mypet.settings.Settings
+import com.turtlepaw.cats.presentation.mypet.settings.StepGoalPicker
 import com.turtlepaw.cats.services.schedulePeriodicMyPetWorker
+import kotlinx.coroutines.launch
 
 const val isMyPetAvailable = true;
+
 @Composable
 fun MyPetButton(context: Context) {
     return Button(
@@ -88,9 +92,11 @@ fun MyPetButton(context: Context) {
 }
 
 enum class MyPetRoutes(private val route: String) {
-    HOME("/home"),
-    HUNGER("/hunger"),
-    HAPPINESS("/happiness");
+    Home("/home"),
+    Hunger("/hunger"),
+    Happiness("/happiness"),
+    Settings("/settings"),
+    StepGoal("/stepGoal");
 
     fun getRoute(query: String? = null): String {
         return if (query != null) {
@@ -127,6 +133,11 @@ class MyPetActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        scheduleMyPetWorker()
+        super.onResume()
+    }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -146,30 +157,56 @@ fun MyPetNavGraph(
         }
     }
 
-        val permissions = rememberPermissionState(Manifest.permission.ACTIVITY_RECOGNITION){
-            context.scheduleMyPetWorker()
-        }
+    val permissions = rememberPermissionState(Manifest.permission.ACTIVITY_RECOGNITION) {
+        context.scheduleMyPetWorker()
+    }
 
-        LaunchedEffect(Unit) {
-            if(permissions.status.isGranted){
-                context.scheduleMyPetWorker()
-            } else {
-                permissions.launchPermissionRequest()
-            }
+    LaunchedEffect(Unit) {
+        if (permissions.status.isGranted) {
+            context.scheduleMyPetWorker()
+        } else {
+            permissions.launchPermissionRequest()
         }
+    }
+
+    var stepGoal by remember { mutableStateOf(defaultStepGoal) }
+
+    LaunchedEffect(Unit) {
+        getStepGoalFlow(context).collect { data ->
+            stepGoal = data
+        }
+    }
 
     SwipeDismissableNavHost(
         navController = navController,
-        startDestination = MyPetRoutes.HOME.getRoute()
+        startDestination = MyPetRoutes.Home.getRoute()
     ) {
-        composable(MyPetRoutes.HOME) {
+        composable(MyPetRoutes.Home) {
             data?.let { MyPetHome(it, navController) }
         }
-        composable(MyPetRoutes.HUNGER) {
+        composable(MyPetRoutes.Hunger) {
             data?.let { MyPetsHunger(it) }
         }
-        composable(MyPetRoutes.HAPPINESS) {
+        composable(MyPetRoutes.Happiness) {
             data?.let { Happiness(it) }
+        }
+        composable(MyPetRoutes.Settings) {
+            Settings(navController, stepGoal)
+        }
+        composable(MyPetRoutes.StepGoal) {
+            StepGoalPicker(
+                List(10) { it * 1000 + 1000 },
+                {
+                    String.format("%,d", it)
+                },
+                recommendedItem = null,
+                currentState = stepGoal
+            ) {
+                coroutineScope.launch {
+                    saveStepGoal(context, it)
+                    navController.popBackStack()
+                }
+            }
         }
     }
 }
@@ -179,10 +216,10 @@ fun NavGraphBuilder.composable(
     arguments: List<NamedNavArgument> = emptyList(),
     deepLinks: List<NavDeepLink> = emptyList(),
     content: @Composable (NavBackStackEntry) -> Unit
-){
+) {
     return composable(route.getRoute(), arguments, deepLinks, content)
 }
 
-fun NavController.navigate(route: MyPetRoutes){
+fun NavController.navigate(route: MyPetRoutes) {
     navigate(route.getRoute())
 }

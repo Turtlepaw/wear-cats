@@ -4,15 +4,15 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.turtlepaw.sunlight",
+  "applicationId": "com.turtlepaw.cats",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 1,
-      "versionName": "1.0",
+      "versionCode": 12,
+      "versionName": "1.3",
       "outputFile": "wear-release.apk"
     }
   ],
