@@ -143,15 +143,11 @@ class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
         // Calculate the number of treats to add based on the step goal completion
         val treatsToAdd = (stepGoalCompletionRatio * MAX_TREATS_PER_DAY).toInt()
 
+        // Calculate remaining treats that can be given today
+        val treatsRemainingToday = catStatus.dailyTreatsAvailable - catStatus.treats
+
         // Ensure we don't exceed the daily treat cap
-        val treatsAddedToday = if (catStatus.lastFed == null || catStatus.lastUpdate == null) {
-            // If the cat hasn't been fed today, use the cap
-            minOf(treatsToAdd, catStatus.dailyTreatsAvailable)
-        } else {
-            // Calculate remaining treats based on previous day's total
-            val treatsRemainingToday = catStatus.dailyTreatsAvailable - catStatus.treats
-            minOf(treatsToAdd, treatsRemainingToday).coerceAtLeast(0)
-        }.coerceAtMost(MAX_TREATS_PER_DAY)
+        val treatsAddedToday = minOf(treatsToAdd, treatsRemainingToday).coerceAtLeast(0)
 
         // Log for debugging
         Log.d("MyPetWorker", "Treats to add: $treatsToAdd / Treats added today: $treatsAddedToday")
@@ -176,7 +172,7 @@ class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
             dailyTreatsAvailable = MAX_TREATS_PER_DAY - updatedTreats, // Track remaining treats for today
             treats = updatedTreats,
             hunger = hungerLevel,
-            happiness = (hungerLevel - 100).absoluteValue,
+            happiness = calculateHappiness(hungerLevel),
             happinessReasons = moods.toMap(),
             lastFed = if (treatsAddedToday > 0) LocalDateTime.now() else catStatus.lastFed, // Update last fed only if treats are added
             lastUpdate = LocalDateTime.now() // Update last update to now
@@ -187,7 +183,6 @@ class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
         // Update the cat's status
         saveCatStatus(context, updatedCatStatus)
     }
-
 
     fun calculateHungerLevel(lastFedDate: LocalDateTime): Int {
         val currentDate = LocalDateTime.now()
