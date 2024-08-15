@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.SystemClock
 import android.util.Log
+import androidx.annotation.Keep
 import androidx.health.services.client.HealthServices
 import androidx.health.services.client.PassiveListenerCallback
 import androidx.health.services.client.data.DataPointContainer
@@ -41,7 +42,10 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import kotlin.math.absoluteValue
 
+@Keep
 private const val MAX_TREATS_PER_DAY = 10 // Example cap
+
+@Keep
 class MyPetWorker(val context: Context, workerParams: WorkerParameters) :
     Worker(context, workerParams) {
 

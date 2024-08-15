@@ -12,3 +12,5 @@
 
 # Keep services
 -keep class com.turtlepaw.cats.services.CatDownloadWorker  { *; }
+-keep class com.turtlepaw.cats.services.MyPetWorker  { *; }
+-keep class androidx.health.services.client.** { *; }

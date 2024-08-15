@@ -23,9 +23,9 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault">
         <!-- Remove for production -->
-<!--        <property-->
-<!--            android:name="com.google.wear.watchface.format.version"-->
-<!--            android:value="1" />-->
+        <property
+            android:name="com.google.wear.watchface.format.version"
+            android:value="1" />
 
         <receiver android:name=".services.ComplicationUpdater" />
         <meta-data
