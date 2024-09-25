@@ -72,6 +72,7 @@ import com.turtlepaw.cats.database.ThemeViewModel
 import com.turtlepaw.cats.database.colorsMap
 import com.turtlepaw.cats.presentation.Routes
 import com.turtlepaw.cats.presentation.components.ItemsListWithModifier
+import com.turtlepaw.cats.presentation.isOfflineAvailable
 import com.turtlepaw.cats.presentation.pages.WearHome
 import com.turtlepaw.cats.presentation.theme.SleepTheme
 import com.turtlepaw.cats.services.CatDownloadWorker
@@ -99,8 +100,6 @@ fun isWorkScheduled(context: Context, uniqueWorkName: String): Boolean {
     }
     return false
 }
-
-const val isOfflineAvailable = true
 
 @SuppressLint("InlinedApi")
 @OptIn(

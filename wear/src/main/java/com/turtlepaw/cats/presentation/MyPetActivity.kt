@@ -59,8 +59,6 @@ import com.turtlepaw.cats.presentation.mypet.settings.StepGoalPicker
 import com.turtlepaw.cats.services.schedulePeriodicMyPetWorker
 import kotlinx.coroutines.launch
 
-const val isMyPetAvailable = true;
-
 @Composable
 fun MyPetButton(context: Context) {
     return Button(

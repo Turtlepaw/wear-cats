@@ -40,7 +40,6 @@ import com.turtlepaw.cats.presentation.pages.loadOfflineImages
 import com.turtlepaw.cats.presentation.pages.safelyFetch
 import com.turtlepaw.cats.presentation.pages.settings.ThemePicker
 import com.turtlepaw.cats.presentation.pages.settings.WearSettings
-import com.turtlepaw.cats.presentation.pages.settings.isOfflineAvailable
 import com.turtlepaw.cats.presentation.theme.SleepTheme
 import com.turtlepaw.cats.tile.loadImage
 import com.turtlepaw.cats.utils.ImageControls
@@ -170,7 +169,7 @@ fun WearPages(
                     }
 
                     val offlineImages = database.imageDao().getImages()
-                    if (offlineImages.isEmpty()) error =
+                    if (offlineImages.isEmpty() || !isOfflineAvailable) error =
                         if (isOfflineAvailable) "You haven't downloaded any offline images"
                         else "You're offline"
                     animalPhotos = loadOfflineImages(offlineImages) {

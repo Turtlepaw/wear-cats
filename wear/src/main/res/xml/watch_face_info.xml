@@ -22,5 +22,5 @@
     https://developer.android.com/training/wearables/wff/setup#declare-metadata
     -->
   <Preview value="@drawable/preview" />
-  <Editable value="true"/>
+  <Editable value="false"/>
 </WatchFaceInfo>

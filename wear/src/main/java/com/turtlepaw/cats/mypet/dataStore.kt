@@ -41,7 +41,7 @@ suspend fun saveCatStatus(context: Context, status: CatStatus) {
         preferences[HUNGER_KEY] = status.hunger
         preferences[TREATS_KEY] = status.treats
         preferences[HAPPINESS_KEY] = status.happiness
-        preferences[DAILY_TREATS_AVAILABLE_KEY] = status.dailyTreatsAvailable // Updated key
+        preferences[DAILY_TREATS_AVAILABLE_KEY] = status.dailyTreatsUsed // Updated key
         // Convert happiness reasons map to a string for storage
         preferences[HAPPINESS_REASONS_KEY] = status.happinessReasons.entries.joinToString(",") { "${it.key}:${it.value}" }
         preferences[LAST_FED_KEY] = status.lastFed?.toString() ?: ""

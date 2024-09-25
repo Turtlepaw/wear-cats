@@ -59,7 +59,7 @@ fun MyPetsHunger(
                 val context = LocalContext.current
                 Button(onClick = {
                         coroutineScope.launch {
-                            feedCatTreat(context, data.treats)
+                            feedCatTreat(context, data.treats + data.dailyTreatsUsed)
                         }
                 }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.primaryButtonColors(backgroundColor = Color(0xFF2986AE)), enabled = data.treats > 0) {
                     Text("${if(data.treats > 0) "Feed" else "No"} ${if(data.treats == 1) "treat" else ("treats")} (${data.treats.coerceAtLeast(0)})")

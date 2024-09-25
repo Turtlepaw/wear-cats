@@ -6,11 +6,7 @@ import com.turtlepaw.cats.mypet.Moods
 import com.turtlepaw.cats.mypet.getCatStatusFlow
 import com.turtlepaw.cats.mypet.saveCatStatus
 import com.turtlepaw.cats.services.scheduleMyPetWorker
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
 suspend fun feedCatTreat(context: Context, treatsUsed: Int) {
@@ -18,7 +14,7 @@ suspend fun feedCatTreat(context: Context, treatsUsed: Int) {
     val catStatus = getCatStatusFlow(context).firstOrNull() ?: CatStatus(
         hunger = 0,
         treats = 0,
-        dailyTreatsAvailable = 0,
+        dailyTreatsUsed = 0,
         lastUpdate = null,
         happinessReasons = mapOf(),
         happiness = 0,
@@ -28,6 +24,7 @@ suspend fun feedCatTreat(context: Context, treatsUsed: Int) {
     // Update the cat's status
     val updatedCatStatus = catStatus.copy(
         treats = 0, // All treats are used
+        dailyTreatsUsed = treatsUsed,
 //        hunger = updatedHunger,
 //        happiness = updatedHappiness,
         happinessReasons = MoodManager.fromMap(catStatus.happinessReasons)

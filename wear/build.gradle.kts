@@ -15,8 +15,8 @@ android {
         applicationId = "com.turtlepaw.cats"
         minSdk = 30
         targetSdk = 33
-        versionCode = 13
-        versionName = "1.3"
+        versionCode = 15
+        versionName = "1.4"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -108,6 +108,16 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
+
+    // Tests
+    // Add the JUnit testing framework
+    testImplementation(libs.junit)
+
+    // Optional but useful: Mockito for mocking
+    testImplementation("org.mockito:mockito-core:3.11.2")
+
+    // Kotlin Coroutines for testing (if you're using coroutines)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 
     // Lottie
     implementation(libs.lottie.compose)

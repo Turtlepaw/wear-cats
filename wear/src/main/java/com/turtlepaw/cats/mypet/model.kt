@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 data class CatStatus(
     val hunger: Int,
     val treats: Int,
-    val dailyTreatsAvailable: Int, // Renamed from maxTreats
+    val dailyTreatsUsed: Int, // Renamed from maxTreats
     val happiness: Int,
     val happinessReasons: Map<String, Int>,
     val lastFed: LocalDateTime?,
